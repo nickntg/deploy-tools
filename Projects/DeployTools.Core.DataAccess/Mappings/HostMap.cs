@@ -13,6 +13,7 @@ namespace DeployTools.Core.DataAccess.Mappings
             Map(x => x.SshUserName).Column("ssh_user_name");
             Map(x => x.KeyFile).Column("key_file");
             Map(x => x.NextFreePort).Column("next_free_port");
+            Map(x => x.InstanceId).Column("instance_id");
         }
     }
 }

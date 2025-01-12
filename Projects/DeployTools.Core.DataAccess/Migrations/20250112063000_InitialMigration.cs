@@ -12,7 +12,8 @@ namespace AccountsApi.Core.DataAccess.Migrations
                 .WithColumn("address").AsString(256).NotNullable()
                 .WithColumn("ssh_user_name").AsString(256).NotNullable()
                 .WithColumn("key_file").AsString().NotNullable()
-                .WithColumn("next_free_port").AsInt32().NotNullable();
+                .WithColumn("next_free_port").AsInt32().NotNullable()
+                .WithColumn("instance_id").AsString().NotNullable();
 
             CreateBaseColumnsAndIndexes("packages")
                 .WithColumn("deployable_location").AsString().NotNullable()
