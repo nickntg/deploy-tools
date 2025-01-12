@@ -6,5 +6,6 @@ namespace DeployTools.Core.Services.Interfaces
     public interface IDeployOrchestrator
     {
         Task DeployAsync(Application application, Host host);
+        Task TakeDownAsync(Application application);
     }
 }

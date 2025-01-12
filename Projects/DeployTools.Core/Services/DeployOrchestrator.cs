@@ -36,11 +36,14 @@ namespace DeployTools.Core.Services
 
             ssh.JournalEvent += SshOnJournalEvent;
 
-            var deployFolder = $"/home/{host.SshUserName}/{application.Name}";
-            var serviceName = $"{application.Name}.service";
-            var serviceLocation = $"/etc/systemd/system/{serviceName}";
+            var deployFolder = GetDeployFolder(host.SshUserName, application.Name);
+            var serviceName = GetServiceName(application.Name);
+            var serviceLocation = GetServiceLocation(serviceName);
 
             var applicationCreateSuccessful = true;
+
+            // TODO: Port belongs at active deployment instead of application.
+            Logger.Info($"Starting deployment of application {application.Name} with id {application.Id}, package {package.Name} with id {package.Id}, to host {host.Address} with id {host.Id}, at port {application.Port}");
 
             try
             {
@@ -88,12 +91,86 @@ namespace DeployTools.Core.Services
                 await RunCommandWithLogging($"sudo systemctl start {serviceName}", "Starting service");
 
                 await RunCommandWithLogging($"sudo systemctl status {serviceName}", "Getting service status");
+
+                await dbContext.ActiveDeploymentsRepository.CleanupDeploymentsOfApplicationAsync(application.Id);
+
+                await dbContext.ActiveDeploymentsRepository.SaveAsync(new ActiveDeployment
+                {
+                    PackageId = application.PackageId,
+                    ApplicationId = application.Id,
+                    HostId = host.Id,
+                    DeployId = deploy.Id
+                });
+
+                /*
+                 * Next steps:
+                 *  - Add a new target group for the new application and port.
+                 *  - Add the target group to the load balancer.
+                 *  - Add a rule matching an incoming host name to the newly created target group.
+                 *  - Clean up as necessary if something fails.
+                 */
             }
             catch (Exception ex)
             {
                 applicationCreateSuccessful = false;
 
                 Logger.Error(ex, "Application creation failed - rolling back changes");
+
+                await TakeDownAsync(application, host, _deployId);
+            }
+            finally
+            {
+                ssh.JournalEvent -= SshOnJournalEvent;
+
+                await ssh.DisconnectAsync();
+
+                deploy.IsSuccessful = applicationCreateSuccessful;
+                deploy.IsCompleted = true;
+
+                await dbContext.ApplicationDeploysRepository.UpdateAsync(deploy);
+            }
+        }
+
+        public async Task TakeDownAsync(Application application)
+        {
+            var activeDeployments =
+                await dbContext.ActiveDeploymentsRepository.GetDeploymentsOfApplicationAsync(application.Id);
+
+            foreach (var deployment in activeDeployments)
+            {
+                var host = await dbContext.HostsRepository.GetByIdAsync(deployment.HostId);
+
+                await TakeDownAsync(application, host, deployment.DeployId);
+            }
+        }
+
+        private async Task TakeDownAsync(Application application, Host host, string deployId)
+        {
+            var deployFolder = GetDeployFolder(host.SshUserName, application.Name);
+            var serviceName = GetServiceName(application.Name);
+            var serviceLocation = GetServiceLocation(serviceName);
+
+            var wasConnected = true;
+
+            Logger.Info($"Starting takedown of application {application.Name} with id {application.Id}, from host {host.Address} with id {host.Id}, deploy id {deployId}");
+
+            try
+            {
+                if (!await ssh.IsConnectedAsync())
+                {
+                    wasConnected = false;
+
+                    ssh.JournalEvent += SshOnJournalEvent;
+
+                    _deployId = deployId;
+
+                    Logger.Info("Connecting to host");
+                    if (!await Connect(host))
+                    {
+                        Logger.Error("Connection failed");
+                        return;
+                    }
+                }
 
                 Logger.Info("Checking for service file");
                 var result = await ssh.FileExistsAsync(serviceLocation);
@@ -127,13 +204,31 @@ namespace DeployTools.Core.Services
             }
             finally
             {
-                ssh.JournalEvent -= SshOnJournalEvent;
+                if (!wasConnected)
+                {
+                    ssh.JournalEvent -= SshOnJournalEvent;
 
-                deploy.IsSuccessful = applicationCreateSuccessful;
-                deploy.IsCompleted = true;
+                    await ssh.DisconnectAsync();
 
-                await dbContext.ApplicationDeploysRepository.UpdateAsync(deploy);
+                    await dbContext.ActiveDeploymentsRepository.CleanupDeploymentsOfApplicationAsync(application.Id);
+                }
             }
+
+        }
+
+        private string GetDeployFolder(string sshUserName, string applicationName)
+        {
+            return $"/home/{sshUserName}/{applicationName}";
+        }
+
+        private string GetServiceName(string applicationName)
+        {
+            return $"{applicationName}.service";
+        }
+
+        private string GetServiceLocation(string serviceName)
+        {
+            return $"/etc/systemd/system/{serviceName}";
         }
 
         private async Task RunCommandWithLogging(string command, string log, bool throwException = true)

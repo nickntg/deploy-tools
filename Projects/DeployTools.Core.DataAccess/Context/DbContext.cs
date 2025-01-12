@@ -25,6 +25,7 @@ namespace DeployTools.Core.DataAccess.Context
             HostsRepository = new HostsRepository(Session);
             PackagesRepository = new PackagesRepository(Session);
             JournalEntriesRepository = new JournalEntriesRepository(Session);
+            ActiveDeploymentsRepository = new ActiveDeploymentsRepository(Session);
         }
 
         public IApplicationDeploysRepository ApplicationDeploysRepository { get; }
@@ -32,6 +33,7 @@ namespace DeployTools.Core.DataAccess.Context
         public IHostsRepository HostsRepository { get; }
         public IPackagesRepository PackagesRepository { get; }
         public IJournalEntriesRepository JournalEntriesRepository { get; }
+        public IActiveDeploymentsRepository ActiveDeploymentsRepository { get; }
 
         public void BeginTransaction()
         {

@@ -11,6 +11,7 @@ namespace DeployTools.Core.DataAccess.Context.Interfaces
         public IHostsRepository HostsRepository { get; }
         public IPackagesRepository PackagesRepository { get; }
         public IJournalEntriesRepository JournalEntriesRepository { get; }
+        public IActiveDeploymentsRepository ActiveDeploymentsRepository { get; }
 
         void BeginTransaction();
         void Commit();

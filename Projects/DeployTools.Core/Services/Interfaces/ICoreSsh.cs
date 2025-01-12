@@ -8,6 +8,8 @@ namespace DeployTools.Core.Services.Interfaces
     {
         event EventHandler<UploadEventArgs> UploadDirectoryProgressEvent;
         event EventHandler<JournalEventArgs> JournalEvent;
+        Task<bool> IsConnectedAsync();
+        Task DisconnectAsync();
         Task<SshResult> ConnectAsync(string address, string userName, string keyFile);
         Task<SshResult> RunCommandAsync(string command);
         Task<SshResult> UploadFileAsync(string localFile, string remoteFile);

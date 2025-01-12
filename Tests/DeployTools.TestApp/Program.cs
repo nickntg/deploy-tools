@@ -58,6 +58,7 @@ namespace DeployTools.TestApp
             var orchestrator = GetOrchestrator();
 
             await orchestrator.DeployAsync(application, host);
+            await orchestrator.TakeDownAsync(application);
         }
 
         private static IDeployOrchestrator GetOrchestrator()

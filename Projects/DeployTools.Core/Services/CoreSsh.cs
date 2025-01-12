@@ -21,6 +21,19 @@ namespace DeployTools.Core.Services
         private string _userName;
         private string _keyFile;
 
+        public Task<bool> IsConnectedAsync()
+        {
+            return Task.FromResult(_sshClient is not null && _sshClient.IsConnected);
+        }
+
+        public async Task DisconnectAsync()
+        {
+            if (await IsConnectedAsync())
+            {
+                _sshClient.Disconnect();
+            }
+        }
+
         public async Task<SshResult> ConnectAsync(string address, string userName, string keyFile)
         {
             var journal = new JournalEventArgs
