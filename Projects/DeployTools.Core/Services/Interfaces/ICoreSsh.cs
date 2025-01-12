@@ -8,12 +8,12 @@ namespace DeployTools.Core.Services.Interfaces
     {
         event EventHandler<UploadEventArgs> UploadDirectoryProgressEvent;
         event EventHandler<JournalEventArgs> JournalEvent;
-        Task<SshResult> Connect(string address, string userName, string keyFile);
-        Task<SshResult> RunCommand(string command);
-        Task<SshResult> UploadFile(string localFile, string remoteFile);
-        Task<SshResult> UploadContent(string content, string remoteFile);
-        Task<SshResult> UploadDirectory(string localDirectory, string remoteDirectory);
-        Task<SshResult> FileExists(string remoteFile);
-        Task<SshResult> DirectoryExists(string remoteDirectory);
+        Task<SshResult> ConnectAsync(string address, string userName, string keyFile);
+        Task<SshResult> RunCommandAsync(string command);
+        Task<SshResult> UploadFileAsync(string localFile, string remoteFile);
+        Task<SshResult> UploadContentAsync(string content, string remoteFile);
+        Task<SshResult> UploadDirectoryAsync(string localDirectory, string remoteDirectory);
+        Task<SshResult> FileExistsAsync(string remoteFile);
+        Task<SshResult> DirectoryExistsAsync(string remoteDirectory);
     }
 }

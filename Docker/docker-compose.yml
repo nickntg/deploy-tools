@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+
+  deploy-tools-db:
+    image: postgres:14.5-bullseye
+    container_name: deploy-tools-db
+    ports:
+      - "5432:5432"
+    volumes:
+      - "db-data:/var/lib/postgresql/data"
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "12345"
+      POSTGRES_DB: "deploytools"
+      PGDATA: "/pgdata"
+    restart: always
+
+volumes:
+  db-data:
+    driver: local

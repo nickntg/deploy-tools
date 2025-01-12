@@ -21,11 +21,11 @@ namespace DeployTools.Core.Services
         private string _userName;
         private string _keyFile;
 
-        public async Task<SshResult> Connect(string address, string userName, string keyFile)
+        public async Task<SshResult> ConnectAsync(string address, string userName, string keyFile)
         {
             var journal = new JournalEventArgs
             {
-                CommandExecuted = "Connect"
+                CommandExecuted = "ConnectAsync"
             };
 
             try
@@ -74,7 +74,7 @@ namespace DeployTools.Core.Services
             }
         }
 
-        public Task<SshResult> RunCommand(string command)
+        public Task<SshResult> RunCommandAsync(string command)
         {
             if (_sshClient is null || !_sshClient.IsConnected)
             {
@@ -108,7 +108,7 @@ namespace DeployTools.Core.Services
             }
         }
 
-        public async Task<SshResult> UploadFile(string localFile, string remoteFile)
+        public async Task<SshResult> UploadFileAsync(string localFile, string remoteFile)
         {
             if (_sshClient is null || !_sshClient.IsConnected)
             {
@@ -146,7 +146,7 @@ namespace DeployTools.Core.Services
             }
         }
 
-        public async Task<SshResult> UploadContent(string content, string remoteFile)
+        public async Task<SshResult> UploadContentAsync(string content, string remoteFile)
         {
             if (_sshClient is null || !_sshClient.IsConnected)
             {
@@ -179,7 +179,7 @@ namespace DeployTools.Core.Services
             }
         }
 
-        public async Task<SshResult> UploadDirectory(string localDirectory, string remoteDirectory)
+        public async Task<SshResult> UploadDirectoryAsync(string localDirectory, string remoteDirectory)
         {
             if (_sshClient is null || !_sshClient.IsConnected)
             {
@@ -293,7 +293,7 @@ namespace DeployTools.Core.Services
             return SshResult.Success();
         }
 
-        public async Task<SshResult> FileExists(string remoteFile)
+        public async Task<SshResult> FileExistsAsync(string remoteFile)
         {
             if (_sshClient is null || !_sshClient.IsConnected)
             {
@@ -344,7 +344,7 @@ namespace DeployTools.Core.Services
             }
         }
 
-        public async Task<SshResult> DirectoryExists(string remoteDirectory)
+        public async Task<SshResult> DirectoryExistsAsync(string remoteDirectory)
         {
             if (_sshClient is null || !_sshClient.IsConnected)
             {
