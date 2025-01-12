@@ -63,12 +63,13 @@ namespace DeployTools.Core.Services
                     "Making package application executable");
 
                 var serviceContents =
-                    "[Unit]\r\nDescription={kestrel_name}\r\nAfter=network.target\r\n\r\n[Service]\r\nWorkingDirectory={deploy_folder}\r\nExecStart={deploy_executable}\r\nRestart=always\r\n# User and group under which the service runs\r\nUser=ec2-user\r\nGroup=ec2-user\r\nEnvironment=DOTNET_ENVIRONMENT=Production\r\n\r\n[Install]\r\nWantedBy=multi-user.target";
+                    "[Unit]\r\nDescription={kestrel_name}\r\nAfter=network.target\r\n\r\n[Service]\r\nWorkingDirectory={deploy_folder}\r\nExecStart={deploy_executable}\r\nRestart=always\r\n# User and group under which the service runs\r\nUser=ec2-user\r\nGroup=ec2-user\r\nEnvironment=DOTNET_ENVIRONMENT=Production\r\nEnvironment=ASPNETCORE_URLS=http://0.0.0.0:{listening_port}\r\n\r\n[Install]\r\nWantedBy=multi-user.target";
 
                 serviceContents = serviceContents
                     .Replace("{deploy_folder}", deployFolder)
                     .Replace("{deploy_executable}", $"{deployFolder}/{package.ExecutableFile}")
-                    .Replace("{kestrel_name}", $"Application {application.Name}, package {package.Name}");
+                    .Replace("{kestrel_name}", $"Application {application.Name}, package {package.Name}")
+                    .Replace("{listening_port}", application.Port.ToString());
 
                 Logger.Info("Uploading service file");
                 result = await ssh.UploadContentAsync(serviceContents, $"{deployFolder}/{serviceName}");
@@ -161,6 +162,8 @@ namespace DeployTools.Core.Services
 
         private void SshOnJournalEvent(object sender, JournalEventArgs e)
         {
+            Logger.Debug($"Command {e.CommandExecuted}, started {e.CommandStarted:yyyy-MM-dd HH:mm:ss}, ended {e.CommandCompleted:yyyy-MM-dd HH:mm:ss}, success={e.WasSuccessful}");
+
             dbContext.JournalEntriesRepository.SaveAsync(new JournalEntry
             {
                 CommandCompleted = e.CommandCompleted,
