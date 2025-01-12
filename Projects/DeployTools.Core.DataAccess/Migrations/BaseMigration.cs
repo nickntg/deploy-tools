@@ -44,9 +44,9 @@ namespace DeployTools.Core.DataAccess.Migrations
 
             IfDatabase("PostgreSQL")
                 .Create
-                .Index($"ix_{tableName}_created_at")
+                .Index($"ix_{tableName}_updated_at")
                 .OnTable(tableName)
-                .OnColumn("created_at");
+                .OnColumn("updated_at");
         }
     }
 }

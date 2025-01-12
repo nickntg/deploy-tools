@@ -6,9 +6,9 @@ namespace DeployTools.Core.DataAccess.Entities
     {
         public virtual string DeployId { get; set; }
         public virtual DateTimeOffset CommandStarted { get; set; }
-        public DateTimeOffset CommandCompleted { get; set; }
-        public string CommandExecuted { get; set; }
-        public bool WasSuccessful { get; set; }
-        public string Output { get; set; }
+        public virtual DateTimeOffset CommandCompleted { get; set; }
+        public virtual string CommandExecuted { get; set; }
+        public virtual bool WasSuccessful { get; set; }
+        public virtual string Output { get; set; }
     }
 }

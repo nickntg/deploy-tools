@@ -37,7 +37,8 @@ namespace DeployTools.Core.DataAccess.Configuration
 					.CurrentSessionContext(context)
 					.BuildSessionFactory();
 
-			services.AddScoped<IDbContext, DbContext>();
+            services.AddSingleton(factory);
+            services.AddScoped<IDbContext, DbContext>();
 
 			AddFluentMigrator(services, connectionString);
 

@@ -9,8 +9,15 @@ namespace DeployTools.Core.DataAccess.Context
 {
     public class DbContext : IDbContext
     {
-        public DbContext()
+        protected ISessionFactory SessionFactory;
+
+        protected ISession Session;
+
+        protected ITransaction Transaction;
+
+        public DbContext(ISessionFactory sessionFactory)
         {
+            SessionFactory = sessionFactory;
             Session = CreateNewSession();
 
             ApplicationsRepository = new ApplicationsRepository(Session);
@@ -25,12 +32,6 @@ namespace DeployTools.Core.DataAccess.Context
         public IHostsRepository HostsRepository { get; }
         public IPackagesRepository PackagesRepository { get; }
         public IJournalEntriesRepository JournalEntriesRepository { get; }
-
-        protected ISessionFactory SessionFactory;
-
-        protected ISession Session;
-
-        protected ITransaction Transaction;
 
         public void BeginTransaction()
         {
