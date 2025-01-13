@@ -7,5 +7,7 @@
         public virtual string SshUserName { get; set; }
         public virtual string KeyFile { get; set; }
         public virtual int NextFreePort { get; set; }
+        public virtual string AssignedLoadBalancerArn { get; set; }
+        public virtual string VpcId { get; set; }
     }
 }

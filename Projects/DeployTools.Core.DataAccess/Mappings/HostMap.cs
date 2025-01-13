@@ -14,6 +14,8 @@ namespace DeployTools.Core.DataAccess.Mappings
             Map(x => x.KeyFile).Column("key_file");
             Map(x => x.NextFreePort).Column("next_free_port");
             Map(x => x.InstanceId).Column("instance_id");
+            Map(x => x.AssignedLoadBalancerArn).Column("assigned_load_balancer_arn");
+            Map(x => x.VpcId).Column("vpc_id");
         }
     }
 }

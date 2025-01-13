@@ -9,6 +9,7 @@ using DeployTools.Core.Services;
 using DeployTools.Core.Services.Interfaces;
 using NLog;
 using NLog.Extensions.Logging;
+using Amazon.ElasticLoadBalancingV2;
 
 namespace DeployTools.TestApp
 {
@@ -34,6 +35,10 @@ namespace DeployTools.TestApp
             {
                 builder.AddNLog();
             });
+
+            var options = Configuration.GetAWSOptions();
+
+            services.AddSingleton(_ => options.CreateServiceClient<IAmazonElasticLoadBalancingV2>());
 
             services.AddScoped<ICoreSsh, CoreSsh>();
             services.AddScoped<IDeployOrchestrator, DeployOrchestrator>();

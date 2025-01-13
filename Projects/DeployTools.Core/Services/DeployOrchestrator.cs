@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
+using Amazon.ElasticLoadBalancingV2;
+using Amazon.ElasticLoadBalancingV2.Model;
 using DeployTools.Core.DataAccess.Context.Interfaces;
 using DeployTools.Core.DataAccess.Entities;
 using DeployTools.Core.Services.Interfaces;
@@ -7,7 +10,7 @@ using NLog;
 
 namespace DeployTools.Core.Services
 {
-    public class DeployOrchestrator(IDbContext dbContext, ICoreSsh ssh) : IDeployOrchestrator
+    public class DeployOrchestrator(IDbContext dbContext, ICoreSsh ssh, IAmazonElasticLoadBalancingV2 elbClient) : IDeployOrchestrator
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private string _deployId;
@@ -36,9 +39,9 @@ namespace DeployTools.Core.Services
 
             ssh.JournalEvent += SshOnJournalEvent;
 
-            var deployFolder = GetDeployFolder(host.SshUserName, application.Name);
-            var serviceName = GetServiceName(application.Name);
-            var serviceLocation = GetServiceLocation(serviceName);
+            var deployFolder = ConstructDeployFolder(host.SshUserName, application.Name);
+            var serviceName = ConstructServiceName(application.Name);
+            var serviceLocation = ConstructServiceLocation(serviceName);
 
             var applicationCreateSuccessful = true;
 
@@ -102,6 +105,8 @@ namespace DeployTools.Core.Services
                     DeployId = deploy.Id
                 });
 
+                await CreateLoadBalancingAsync(application, host);
+
                 /*
                  * Next steps:
                  *  - Add a new target group for the new application and port.
@@ -144,11 +149,153 @@ namespace DeployTools.Core.Services
             }
         }
 
+        private async Task CreateLoadBalancingAsync(Application application, Host host)
+        {
+            var targetGroupName = ConstructTargetGroupName(application.Name);
+            var ruleName = ConstructRuleName(application.Name);
+
+            Logger.Info($"Creating target group {targetGroupName}");
+            var targetGroupResponse = await elbClient.CreateTargetGroupAsync(new CreateTargetGroupRequest
+            {
+                Name = targetGroupName,
+                Protocol = ProtocolEnum.HTTP,
+                Port = application.Port,
+                VpcId = host.VpcId,
+                TargetType = TargetTypeEnum.Instance,
+                HealthCheckEnabled = true,
+                HealthCheckPath = "/",
+                HealthCheckIntervalSeconds = 30,
+                HealthCheckTimeoutSeconds = 5,
+                HealthyThresholdCount = 3,
+                UnhealthyThresholdCount = 3
+            });
+
+            var targetGroup = targetGroupResponse.TargetGroups[0];
+
+            Logger.Info($"Registering instance {host.InstanceId} to target group {targetGroupName}");
+            await elbClient.RegisterTargetsAsync(new RegisterTargetsRequest
+            {
+                TargetGroupArn = targetGroup.TargetGroupArn,
+                Targets = [new() { Id = host.InstanceId }]
+            });
+
+            Logger.Info("Retrieving listeners");
+            var listeners = await elbClient.DescribeListenersAsync(new DescribeListenersRequest
+            {
+                LoadBalancerArn = host.AssignedLoadBalancerArn
+            });
+
+            var portToFind = listeners.Listeners.Count == 1
+                ? 80
+                : 443;
+
+            Logger.Info($"Will look for listener on port {portToFind}");
+
+            foreach (var listener in listeners.Listeners)
+            {
+                if (listener.Port != portToFind)
+                {
+                    continue;
+                }
+
+                Logger.Info($"Adding rule to listener - domain {application.Domain}");
+                await elbClient.CreateRuleAsync(new CreateRuleRequest
+                {
+                    Tags =
+                    [
+                        new()
+                        {
+                            Key = "Name",
+                            Value = ruleName
+                        }
+                    ],
+                    ListenerArn = listener.ListenerArn,
+                    Priority = 1,
+                    Actions =
+                    [
+                        new()
+                        {
+                            TargetGroupArn = targetGroup.TargetGroupArn,
+                            Type = ActionTypeEnum.Forward
+                        }
+                    ],
+                    Conditions =
+                    [
+                        new()
+                        {
+                            Field = "host-header",
+                            HostHeaderConfig = new HostHeaderConditionConfig
+                            {
+                                Values = [application.Domain, $"*.{application.Domain}"]
+                            }
+                        }
+                    ]
+                });
+            }
+        }
+
+        private async Task TakeDownLoadBalancingAsync(Application application, Host host)
+        {
+            Logger.Info($"Starting takedown of load balancing of application {application.Name} with id {application.Id}, from host {host.Address} with id {host.Id}");
+
+            var targetGroupName = ConstructTargetGroupName(application.Name);
+
+            Logger.Info("Retrieving load balancers");
+            var results = await elbClient.DescribeTargetGroupsAsync(new DescribeTargetGroupsRequest
+            {
+                LoadBalancerArn = host.AssignedLoadBalancerArn
+            });
+
+            Logger.Info($"Trying to find target group {targetGroupName}");
+            var foundTargetGroup = results.TargetGroups.FirstOrDefault(x => x.TargetGroupName.Equals(targetGroupName));
+
+            if (foundTargetGroup is not null)
+            {
+                Logger.Info("Listing listeners");
+                var listeners = await elbClient.DescribeListenersAsync(new DescribeListenersRequest
+                {
+                    LoadBalancerArn = host.AssignedLoadBalancerArn
+                });
+
+                foreach (var listener in listeners.Listeners)
+                {
+                    var rule = ConstructRuleName(application.Name);
+                    
+                    Logger.Info($"Trying to find rule {rule} in listener {listener.ListenerArn}");
+
+                    var rules = await elbClient.DescribeRulesAsync(new DescribeRulesRequest
+                    {
+                        ListenerArn = listener.ListenerArn
+                    });
+
+                    var foundRule = rules.Rules.FirstOrDefault(x =>
+                        x.Actions[0].TargetGroupArn.Equals(foundTargetGroup.TargetGroupArn));
+
+                    if (foundRule is not null)
+                    {
+                        Logger.Info($"Removing rule {foundRule.RuleArn}");
+
+                        await elbClient.DeleteRuleAsync(new DeleteRuleRequest
+                        {
+                            RuleArn = foundRule.RuleArn
+                        });
+                    }
+                }
+
+                Logger.Info($"Removing target group {foundTargetGroup.TargetGroupArn}");
+
+                await elbClient.DeleteTargetGroupAsync(new DeleteTargetGroupRequest
+                {
+                    TargetGroupArn = foundTargetGroup.TargetGroupArn
+                });
+            }
+        }
+
         private async Task TakeDownAsync(Application application, Host host, string deployId)
         {
-            var deployFolder = GetDeployFolder(host.SshUserName, application.Name);
-            var serviceName = GetServiceName(application.Name);
-            var serviceLocation = GetServiceLocation(serviceName);
+            var deployFolder = ConstructDeployFolder(host.SshUserName, application.Name);
+            var serviceName = ConstructServiceName(application.Name);
+            var serviceLocation = ConstructServiceLocation(serviceName);
 
             var wasConnected = true;
 
@@ -156,6 +303,8 @@ namespace DeployTools.Core.Services
 
             try
             {
+                await TakeDownLoadBalancingAsync(application, host);
+
                 if (!await ssh.IsConnectedAsync())
                 {
                     wasConnected = false;
@@ -216,17 +365,31 @@ namespace DeployTools.Core.Services
 
         }
 
-        private string GetDeployFolder(string sshUserName, string applicationName)
+        private static string ConstructTargetGroupName(string applicationName)
+        {
+            return $"{applicationName
+                .Replace(" ", "_")
+                .Replace("_", "-")}-target-group";
+        }
+
+        private static string ConstructRuleName(string applicationName)
+        {
+            return $"{applicationName
+                .Replace(" ", "_")
+                .Replace("_", "-")}-rule";
+        }
+
+        private static string ConstructDeployFolder(string sshUserName, string applicationName)
         {
             return $"/home/{sshUserName}/{applicationName}";
         }
 
-        private string GetServiceName(string applicationName)
+        private static string ConstructServiceName(string applicationName)
         {
             return $"{applicationName}.service";
         }
 
-        private string GetServiceLocation(string serviceName)
+        private static string ConstructServiceLocation(string serviceName)
         {
             return $"/etc/systemd/system/{serviceName}";
         }

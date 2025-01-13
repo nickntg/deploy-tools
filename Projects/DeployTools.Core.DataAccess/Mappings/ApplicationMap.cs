@@ -13,6 +13,7 @@ namespace DeployTools.Core.DataAccess.Mappings
             Map(x => x.Name).Column("name");
             Map(x => x.PackageId).Column("package_id");
             Map(x => x.Port).Column("port");
+            Map(x => x.Domain).Column("domain");
         }
     }
 }
