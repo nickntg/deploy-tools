@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using DeployTools.Core.DataAccess.Entities;
 
-namespace DeployTools.Core.DataAccess.Repositories.Interfaces
+namespace DeployTools.Core.Services.Interfaces
 {
-    public interface ICrudRepository<T> where T : BaseEntity
+    public interface ICrudService<T>
     {
         Task<T> SaveAsync(T entity);
         Task<T> UpdateAsync(T entity);
