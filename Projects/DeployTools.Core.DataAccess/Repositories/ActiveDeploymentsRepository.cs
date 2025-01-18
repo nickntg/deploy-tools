@@ -21,6 +21,13 @@ namespace DeployTools.Core.DataAccess.Repositories
             await _session.FlushAsync();
         }
 
+        public async Task<IList<ActiveDeployment>> GetDeploymentsOfHostAsync(string hostId)
+        {
+            return await _session.CreateCriteria<ActiveDeployment>()
+                .Add(Restrictions.Eq(nameof(ActiveDeployment.HostId), hostId))
+                .ListAsync<ActiveDeployment>();
+        }
+
         public async Task<IList<ActiveDeployment>> GetDeploymentsOfApplicationAsync(string applicationId)
         {
             return await _session.CreateCriteria<ActiveDeployment>()

@@ -36,6 +36,7 @@ namespace DeployTools.Web
             services.AddScoped<ICoreSsh, CoreSsh>();
             services.AddScoped<IDeployOrchestrator, DeployOrchestrator>();
             services.AddScoped<IHostsService, HostsService>();
+            services.AddScoped<IDeploymentsService, DeploymentsService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider)

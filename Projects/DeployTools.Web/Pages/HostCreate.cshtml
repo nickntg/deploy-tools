@@ -1,0 +1,47 @@
+﻿@page
+@model DeployTools.Web.Pages.HostCreateModel
+@{
+    ViewData["Title"] = "New Host";
+}
+@{
+<div class="container mt-4">
+    <h1 class="mb-4">Edit Host</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @Model.ErrorMessage
+        </div>
+    }
+    <form method="post">
+        <div class="mb-3">
+            <label for="Address" class="form-label">Address</label>
+            <input type="text" class="form-control" id="Address" name="Host.Address" value="@Model.Host.Address" required>
+        </div>
+        <div class="mb-3">
+            <label for="InstanceId" class="form-label">Instance ID</label>
+            <input type="text" class="form-control" id="InstanceId" name="Host.InstanceId" value="@Model.Host.InstanceId" required>
+        </div>
+        <div class="mb-3">
+            <label for="SshUserName" class="form-label">SSH Username</label>
+            <input type="text" class="form-control" id="SshUserName" name="Host.SshUserName" value="@Model.Host.SshUserName" required>
+        </div>
+        <div class="mb-3">
+            <label for="KeyFile" class="form-label">Key File</label>
+            <input type="text" class="form-control" id="KeyFile" name="Host.KeyFile" value="@Model.Host.KeyFile" required>
+        </div>
+        <div class="mb-3">
+            <label for="NextFreePort" class="form-label">Next Free Port</label>
+            <input type="number" class="form-control" id="NextFreePort" name="Host.NextFreePort" value="@Model.Host.NextFreePort" required>
+        </div>
+        <div class="mb-3">
+            <label for="AssignedLoadBalancerArn" class="form-label">Load Balancer ARN</label>
+            <input type="text" class="form-control" id="AssignedLoadBalancerArn" name="Host.AssignedLoadBalancerArn" value="@Model.Host.AssignedLoadBalancerArn" required />
+        </div>
+        <div class="mb-3">
+            <label for="VpcId" class="form-label">VPC Id</label>
+            <input type="text" class="form-control" id="VpcId" name="Host.VpcId" value="@Model.Host.VpcId" required>
+        </div>
+        <button type="submit" class="btn btn-success">Save</button>
+    </form>
+</div>
+}

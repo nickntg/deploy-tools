@@ -1,0 +1,74 @@
+﻿@page
+@model DeployTools.Web.Pages.HostsModel
+@{
+    ViewData["Title"] = "Hosts";
+}
+@{
+    <main class="pri_color_3_background pt-2">
+    <div class="container mt-4">
+        <h1 class="mb-4">Host List</h1>
+        <div class="mb-3">
+            <form method="get" action="/HostCreate">
+                <button type="submit" class="btn btn-success">New Host</button>
+            </form>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                @Model.ErrorMessage
+            </div>
+        }
+
+        @if (Model.Hosts is { Count: > 0 })
+        {
+            <table class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Address</th>
+                    <th>Instance ID</th>
+                    <th>SSH Username</th>
+                    <th>Key File</th>
+                    <th>Next Free Port</th>
+                    <th>Load Balancer ARN</th>
+                    <th>VPC ID</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var host in Model.Hosts)
+                {
+                    <tr>
+                        <td>@host.Id</td>
+                        <td>@host.Address</td>
+                        <td>@host.InstanceId</td>
+                        <td>@host.SshUserName</td>
+                        <td>@host.KeyFile</td>
+                        <td>@host.NextFreePort</td>
+                        <td>@host.AssignedLoadBalancerArn</td>
+                        <td>@host.VpcId</td>
+                        <td>@host.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>
+                            <form method="post">
+                                <input type="hidden" name="id" value="@host.Id" />
+                                <button type="submit" asp-page-handler="Delete"  class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                            <form method="get" action="/HostEdit" class="d-inline">
+                                <input type="hidden" name="id" value="@host.Id" />
+                                <button type="submit" class="btn btn-primary btn-sm mt-1">Edit</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No hosts found.</p>
+        }
+    </div>
+    </main>
+}
