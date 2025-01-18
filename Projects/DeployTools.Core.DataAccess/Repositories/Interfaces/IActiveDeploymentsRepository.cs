@@ -8,6 +8,7 @@ namespace DeployTools.Core.DataAccess.Repositories.Interfaces
     {
         Task<IList<ActiveDeployment>> GetDeploymentsOfApplicationAsync(string applicationId);
         Task<IList<ActiveDeployment>> GetDeploymentsOfHostAsync(string hostId);
+        Task<IList<ActiveDeployment>> GetDeploymentsOfPackageAsync(string packageId);
         Task CleanupDeploymentsOfApplicationAsync(string applicationId);
     }
 }

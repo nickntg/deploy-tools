@@ -6,6 +6,38 @@ namespace DeployTools.Web.Helpers
 {
     public static class ValidationExtensions
     {
+        public static async Task<string> ValidatePackage(this Package package, IPackagesService packagesService)
+        {
+            if (string.IsNullOrEmpty(package.DeployableLocation))
+            {
+                return "Deployable location cannot be empty";
+            }
+
+            if (string.IsNullOrEmpty(package.ExecutableFile))
+            {
+                return "Executable file cannot be empty";
+            }
+
+            if (string.IsNullOrEmpty(package.Name))
+            {
+                return "Package name cannot be empty";
+            }
+
+            var existing = await packagesService.GetPackagesByNameAsync(package.Name);
+            if (existing.Count > 1 || (existing.Count == 1 && existing[0].Id != package.Id))
+            {
+                return "Package with the same name already exists";
+            }
+
+            existing = await packagesService.GetPackagesByDeployableLocationAsync(package.DeployableLocation);
+            if (existing.Count > 1 || (existing.Count == 1 && existing[0].Id != package.Id))
+            {
+                return "Package with the same deployable already exists";
+            }
+
+            return null;
+        }
+
         public static async Task<string> ValidateHost(this Host host, IHostsService hostsService)
         {
             if (string.IsNullOrEmpty(host.AssignedLoadBalancerArn))

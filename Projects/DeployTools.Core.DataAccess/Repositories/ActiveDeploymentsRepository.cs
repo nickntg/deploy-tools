@@ -13,6 +13,13 @@ namespace DeployTools.Core.DataAccess.Repositories
     {
         private readonly ISession _session = session;
 
+        public async Task<IList<ActiveDeployment>> GetDeploymentsOfPackageAsync(string packageId)
+        {
+            return await _session.CreateCriteria<ActiveDeployment>()
+                .Add(Restrictions.Eq(nameof(ActiveDeployment.PackageId), packageId))
+                .ListAsync<ActiveDeployment>();
+        }
+
         public async Task CleanupDeploymentsOfApplicationAsync(string applicationId)
         {
             await _session.Query<ActiveDeployment>()

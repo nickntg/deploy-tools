@@ -1,0 +1,66 @@
+﻿@page
+@model DeployTools.Web.Pages.PackagesModel
+@{
+    ViewData["Title"] = "Packages";
+}
+@{
+    <main class="pri_color_3_background pt-2">
+    <div class="container mt-4">
+        <h1 class="mb-4">Packages List</h1>
+        <div class="mb-3">
+            <form method="get" action="/PackageCreate">
+                <button type="submit" class="btn btn-success">New Package</button>
+            </form>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                @Model.ErrorMessage
+            </div>
+        }
+
+        @if (Model.Packages is { Count: > 0 })
+        {
+            <table class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Deployable location</th>
+                    <th>Executable file</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var package in Model.Packages)
+                {
+                    <tr>
+                        <td>@package.Id</td>
+                        <td>@package.Name</td>
+                        <td>@package.DeployableLocation</td>
+                        <td>@package.ExecutableFile</td>
+                        <td>@package.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>
+                            <form method="post">
+                                <input type="hidden" name="id" value="@package.Id" />
+                                <button type="submit" asp-page-handler="Delete"  class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                            <form method="get" action="/PackageEdit" class="d-inline">
+                                <input type="hidden" name="id" value="@package.Id" />
+                                <button type="submit" class="btn btn-primary btn-sm mt-1">Edit</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No hosts found.</p>
+        }
+    </div>
+    </main>
+}

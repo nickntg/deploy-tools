@@ -37,6 +37,7 @@ namespace DeployTools.Web
             services.AddScoped<IDeployOrchestrator, DeployOrchestrator>();
             services.AddScoped<IHostsService, HostsService>();
             services.AddScoped<IDeploymentsService, DeploymentsService>();
+            services.AddScoped<IPackagesService, PackagesService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider)

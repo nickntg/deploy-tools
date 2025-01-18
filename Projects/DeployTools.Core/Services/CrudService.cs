@@ -9,13 +9,17 @@ namespace DeployTools.Core.Services
 {
     public class CrudService<T>() : ICrudService<T> where T: BaseEntity
     {
-        private ICrudRepository<T> _repo;
+        private readonly ICrudRepository<T> _repo;
 
         public CrudService(IDbContext dbContext) : this()
         {
             if (typeof(T) == typeof(Host))
             {
                 _repo = (ICrudRepository<T>)dbContext.HostsRepository;
+            }
+            else if (typeof(T) == typeof(Package))
+            {
+                _repo = (ICrudRepository<T>)dbContext.PackagesRepository;
             }
         }
 
