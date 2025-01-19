@@ -33,24 +33,36 @@ namespace DeployTools.Core.Services
 
         public async Task StartTakeDownAsync(string activeDeploymentId)
         {
-            var jobInfo = new TakeDownJobInfo
+            await SaveJob(new TakeDownJobInfo
             {
                 ActiveDeployId = activeDeploymentId
-            };
+            }, nameof(TakeDownApplicationJob));
+        }
 
-            var job = new Job
+        public async Task StartDeploymentAsync(string applicationId, string hostId)
+        {
+            await SaveJob(new DeployJobInfo
             {
-                IsProcessed = false,
-                Type = nameof(TakeDownApplicationJob),
-                SerializedInfo = JsonSerializer.Serialize(jobInfo),
-            };
-
-            await dbContext.JobsRepository.SaveAsync(job);
+                ApplicationId = applicationId,
+                HostId = hostId
+            }, nameof(DeployApplicationJob));
         }
 
         public async Task<ActiveDeployment> GetActiveDeploymentByIdAsync(string activeDeploymentId)
         {
             return await dbContext.ActiveDeploymentsRepository.GetByIdAsync(activeDeploymentId);
+        }
+
+        private async Task SaveJob(object jobInfo, string jobType)
+        {
+            var job = new Job
+            {
+                IsProcessed = false,
+                Type = jobType,
+                SerializedInfo = JsonSerializer.Serialize(jobInfo),
+            };
+
+            await dbContext.JobsRepository.SaveAsync(job);
         }
     }
 }

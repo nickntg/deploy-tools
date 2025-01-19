@@ -45,7 +45,6 @@ namespace DeployTools.Core.Services
 
             var applicationCreateSuccessful = true;
 
-            // TODO: Port belongs at active deployment instead of application.
             Logger.Info($"Starting deployment of application {application.Name} with id {application.Id}, package {package.Name} with id {package.Id}, to host {host.Address} with id {host.Id}, at port {deployPort}");
 
             try

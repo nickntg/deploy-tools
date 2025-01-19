@@ -51,6 +51,10 @@
                                 <input type="hidden" name="id" value="@application.Id" />
                                 <button type="submit" class="btn btn-primary btn-sm mt-1">Edit</button>
                             </form>
+                            <form method="get" action="/ApplicationDeploy" class="d-inline">
+                                <input type="hidden" name="id" value="@application.Id" />
+                                <button type="submit" class="btn btn-dark btn-sm mt-1">Deploy</button>
+                            </form>
                         </td>
                     </tr>
                 }

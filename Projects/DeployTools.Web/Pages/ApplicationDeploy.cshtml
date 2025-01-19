@@ -1,0 +1,36 @@
+﻿@page
+@model DeployTools.Web.Pages.ApplicationDeployModel
+@{
+    ViewData["Title"] = "Deploy application";
+}
+@{
+    <main class="pri_color_3_background pt-2">
+    <div class="container mt-4">
+        <h1 class="mb-4">Deploy Application</h1>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                @Model.ErrorMessage
+            </div>
+        }
+        
+        <form method="post">
+            <div class="mb-3">
+                <label for="Name" class="form-label">Application name</label>
+                    <input type="text" class="form-control" id="Name" name="ApplicationDeploy.Name" value="@Model.ApplicationDeploy.ApplicationName" required disabled>
+            </div>
+            <div class="mb-3">
+                <label for="HostId" class="form-label">Host</label>
+                <select class="form-select" id="HostId" name="ApplicationDeploy.HostId" required>
+                    @foreach (var host in Model.Hosts)
+                    {
+                        <option value="@host.Id">@host.Address</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-success">Deploy</button>
+        </form>
+    </div>
+</main>
+}

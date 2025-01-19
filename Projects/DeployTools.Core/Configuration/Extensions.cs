@@ -49,6 +49,7 @@ namespace DeployTools.Core.Configuration
         public static IServiceCollection ConfigureDeployToolsBackgroundServices(this IServiceCollection services)
         {
             services.AddScoped<ITakeDownApplicationJob, TakeDownApplicationJob>();
+            services.AddScoped<IDeployApplicationJob, DeployApplicationJob>();
 
             return services;
         }

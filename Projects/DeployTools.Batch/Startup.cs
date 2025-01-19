@@ -80,6 +80,8 @@ namespace DeployTools.Batch
 
             RecurringJob.AddOrUpdate<ITakeDownApplicationJob>("TakeDownApplicationJob",
                 x => x.ProcessAsync(CancellationToken.None), Cron.Minutely);
+            RecurringJob.AddOrUpdate<IDeployApplicationJob>("DeployApplicationJob",
+                x => x.ProcessAsync(CancellationToken.None), Cron.Minutely);
         }
 	}
 }

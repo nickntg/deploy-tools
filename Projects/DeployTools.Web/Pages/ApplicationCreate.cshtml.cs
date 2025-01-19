@@ -25,6 +25,8 @@ namespace DeployTools.Web.Pages
 
         public async Task<IActionResult> OnPost()
         {
+            var id = Request.Form["id"];
+
             var error = await Application.ValidateApplication(applicationsService);
             if (error is not null)
             {

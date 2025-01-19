@@ -27,12 +27,16 @@ namespace DeployTools.Web.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var existingHost = await hostsService.GetByIdAsync(Request.Query["id"]);
+            var id = Request.Query["id"];
+
+            var existingHost = await hostsService.GetByIdAsync(id);
             if (existingHost is null)
             {
                 return NotFound();
             }
 
+            Host.Id = id;
+            
             var error = await Host.ValidateHost(hostsService);
             if (error is not null)
             {

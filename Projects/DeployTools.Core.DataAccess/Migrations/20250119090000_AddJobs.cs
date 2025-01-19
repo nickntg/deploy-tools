@@ -8,7 +8,7 @@ namespace AccountsApi.Core.DataAccess.Migrations
 	{
 		public override void Up()
         {
-            CreateBaseColumnsAndIndexes("job_locks");
+            CreateBaseColumnsAndIndexes("job_locks", 1024);
 
             CreateBaseColumnsAndIndexes("jobs")
                 .WithColumn("is_processed").AsBoolean().NotNullable()

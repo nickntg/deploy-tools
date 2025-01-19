@@ -11,6 +11,7 @@ namespace DeployTools.Core.Services.Interfaces
         Task<IList<ActiveDeployment>> GetActiveDeploymentsOfPackageAsync(string packageId);
         Task<IList<ActiveDeployment>> GetActiveDeploymentsOfApplicationAsync(string applicationId);
         Task StartTakeDownAsync(string activeDeploymentId);
+        Task StartDeploymentAsync(string applicationId, string hostId);
         Task<ActiveDeployment> GetActiveDeploymentByIdAsync(string activeDeploymentId);
     }
 }
