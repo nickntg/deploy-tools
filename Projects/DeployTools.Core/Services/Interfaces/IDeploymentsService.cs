@@ -8,5 +8,6 @@ namespace DeployTools.Core.Services.Interfaces
     {
         Task<IList<ActiveDeployment>> GetActiveDeploymentsOfHostAsync(string hostId);
         Task<IList<ActiveDeployment>> GetActiveDeploymentsOfPackageAsync(string packageId);
+        Task<IList<ActiveDeployment>> GetActiveDeploymentsOfApplicationAsync(string applicationId);
     }
 }

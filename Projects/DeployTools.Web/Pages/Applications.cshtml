@@ -1,15 +1,15 @@
 ﻿@page
-@model DeployTools.Web.Pages.PackagesModel
+@model DeployTools.Web.Pages.ApplicationsModel
 @{
-    ViewData["Title"] = "Packages";
+    ViewData["Title"] = "Applications";
 }
 @{
     <main class="pri_color_3_background pt-2">
     <div class="container mt-4">
-        <h1 class="mb-4">Packages List</h1>
+        <h1 class="mb-4">Applications List</h1>
         <div class="mb-3">
-            <form method="get" action="/PackageCreate">
-                <button type="submit" class="btn btn-success">New Package</button>
+            <form method="get" action="/ApplicationCreate">
+                <button type="submit" class="btn btn-success">New Application</button>
             </form>
         </div>
         
@@ -20,35 +20,35 @@
             </div>
         }
 
-        @if (Model.Packages is { Count: > 0 })
+        @if (Model.Applications is { Count: > 0 })
         {
             <table class="table table-bordered table-striped">
                 <thead>
                 <tr>
                     <th>ID</th>
                     <th>Name</th>
-                    <th>Deployable location</th>
-                    <th>Executable file</th>
+                    <th>Package</th>
+                    <th>Domain</th>
                     <th>Created At</th>
                     <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
-                @foreach (var package in Model.Packages)
+                @foreach (var application in Model.Applications)
                 {
                     <tr>
-                        <td>@package.Id</td>
-                        <td>@package.Name</td>
-                        <td>@package.DeployableLocation</td>
-                        <td>@package.ExecutableFile</td>
-                        <td>@package.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@application.Id</td>
+                        <td>@application.Name</td>
+                        <td>@application.PackageName</td>
+                        <td>@application.Domain</td>
+                        <td>@application.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
                         <td>
                             <form method="post">
-                                <input type="hidden" name="id" value="@package.Id" />
+                                <input type="hidden" name="id" value="@application.Id" />
                                 <button type="submit" asp-page-handler="Delete"  class="btn btn-danger btn-sm">Delete</button>
                             </form>
-                            <form method="get" action="/PackageEdit" class="d-inline">
-                                <input type="hidden" name="id" value="@package.Id" />
+                            <form method="get" action="/ApplicationEdit" class="d-inline">
+                                <input type="hidden" name="id" value="@application.Id" />
                                 <button type="submit" class="btn btn-primary btn-sm mt-1">Edit</button>
                             </form>
                         </td>
@@ -59,7 +59,7 @@
         }
         else
         {
-            <p>No packages found.</p>
+            <p>No applications found.</p>
         }
     </div>
     </main>

@@ -1,0 +1,36 @@
+﻿@page
+@model DeployTools.Web.Pages.ApplicationCreateModel
+@{
+    ViewData["Title"] = "New Application";
+}
+@{
+<div class="container mt-4">
+    <h1 class="mb-4">Edit Host</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @Model.ErrorMessage
+        </div>
+    }
+    <form method="post">
+        <div class="mb-3">
+            <label for="Name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="Name" name="Application.Name" value="@Model.Application.Name" required>
+        </div>
+        <div class="mb-3">
+            <label for="Domain" class="form-label">Domain</label>
+                <input type="text" class="form-control" id="Domain" name="Application.Domain" value="@Model.Application.Domain" required>
+        </div>
+        <div class="mb-3">
+            <label for="PackageId" class="form-label">Package</label>
+            <select class="form-select" id="PackageId" name="Application.PackageId" required>
+            @foreach (var package in Model.ValidPackages)
+            {
+                <option value="@package.Id">@package.Name</option>
+            }
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success">Save</button>
+    </form>
+</div>
+}

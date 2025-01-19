@@ -9,12 +9,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NLog;
 using NLog.Extensions.Logging;
 
 namespace DeployTools.Web
 {
     public class Startup(IConfiguration configuration)
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRazorPages();
@@ -38,10 +41,21 @@ namespace DeployTools.Web
             services.AddScoped<IHostsService, HostsService>();
             services.AddScoped<IDeploymentsService, DeploymentsService>();
             services.AddScoped<IPackagesService, PackagesService>();
+            services.AddScoped<IApplicationsService, ApplicationsService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider)
         {
+            try
+            {
+                serviceProvider.PerformDatabaseMigrations();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Could not perform database migrations");
+                Environment.FailFast(string.Empty, ex);
+            }
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

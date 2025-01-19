@@ -6,6 +6,47 @@ namespace DeployTools.Web.Helpers
 {
     public static class ValidationExtensions
     {
+        public static async Task<string> ValidateApplication(this Application application,
+            IApplicationsService applicationsService)
+        {
+            if (string.IsNullOrEmpty(application.Name))
+            {
+                return "Name cannot be empty";
+            }
+
+            if (string.IsNullOrEmpty(application.Domain))
+            {
+                return "Domain cannot be empty";
+            }
+
+            var existing = await applicationsService.GetApplicationsByNameAsync(application.Name);
+            if (existing.Count > 1 || (existing.Count == 1 && existing[0].Id != application.Id))
+            {
+                return "Application with the same name already exists";
+            }
+
+            existing = await applicationsService.GetApplicationsByDomainAsync(application.Domain);
+            if (existing.Count > 1 || (existing.Count == 1 && existing[0].Id != application.Id))
+            {
+                return "Application with the same domain already exists";
+            }
+
+            if (!string.IsNullOrEmpty(application.Id))
+            {
+                var db = await applicationsService.GetByIdAsync(application.Id);
+                if (db is null)
+                {
+                    return "Cannot find application to edit";
+                }
+
+                if (db.Name != application.Name)
+                {
+                    return "Once set, application name cannot be changed";
+                }
+            }
+
+            return null;
+        }
         public static async Task<string> ValidatePackage(this Package package, IPackagesService packagesService)
         {
             if (string.IsNullOrEmpty(package.DeployableLocation))
