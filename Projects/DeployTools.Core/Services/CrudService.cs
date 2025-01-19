@@ -9,47 +9,47 @@ namespace DeployTools.Core.Services
 {
     public class CrudService<T>() : ICrudService<T> where T: BaseEntity
     {
-        private readonly ICrudRepository<T> _repo;
+        protected readonly ICrudRepository<T> Repo;
 
         public CrudService(IDbContext dbContext) : this()
         {
             if (typeof(T) == typeof(Host))
             {
-                _repo = (ICrudRepository<T>)dbContext.HostsRepository;
+                Repo = (ICrudRepository<T>)dbContext.HostsRepository;
             }
             else if (typeof(T) == typeof(Package))
             {
-                _repo = (ICrudRepository<T>)dbContext.PackagesRepository;
+                Repo = (ICrudRepository<T>)dbContext.PackagesRepository;
             }
             else if (typeof(T) == typeof(Application))
             {
-                _repo = (ICrudRepository<T>)dbContext.ApplicationsRepository;
+                Repo = (ICrudRepository<T>)dbContext.ApplicationsRepository;
             }
         }
 
         public async Task<T> SaveAsync(T entity)
         {
-            return await _repo.SaveAsync(entity);
+            return await Repo.SaveAsync(entity);
         }
 
         public async Task<T> UpdateAsync(T entity)
         {
-            return await _repo.UpdateAsync(entity);
+            return await Repo.UpdateAsync(entity);
         }
 
         public async Task DeleteAsync(T entity)
         {
-            await _repo.DeleteAsync(entity);
+            await Repo.DeleteAsync(entity);
         }
 
         public async Task<T> GetByIdAsync(string id)
         {
-            return await _repo.GetByIdAsync(id);
+            return await Repo.GetByIdAsync(id);
         }
 
         public async Task<IList<T>> GetAllAsync()
         {
-            return await _repo.GetAllAsync();
+            return await Repo.GetAllAsync();
         }
     }
 }

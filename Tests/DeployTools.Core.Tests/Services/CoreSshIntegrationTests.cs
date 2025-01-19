@@ -131,7 +131,7 @@ namespace DeployTools.Core.Tests.Services
                 result = await o.RunCommandAsync($"sudo systemctl status {serviceName}");
                 Assert.True(result.IsSuccessful);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 var result = await o.FileExistsAsync(serviceLocation);
                 Assert.True(result.IsSuccessful);

@@ -1,60 +1,36 @@
 ﻿using System;
-using Amazon.ElasticLoadBalancingV2;
-using DeployTools.Core.DataAccess.Configuration;
-using DeployTools.Core.Services.Interfaces;
-using DeployTools.Core.Services;
+using DeployTools.Core.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using NLog;
 using NLog.Extensions.Logging;
 
 namespace DeployTools.Web
 {
     public class Startup(IConfiguration configuration)
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRazorPages();
             services.AddCors();
 
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-
-            services.AddHibernateWebContext(connectionString);
+            services.ConfigureDataAccess(configuration);
 
             services.AddLogging(builder =>
             {
                 builder.AddNLog();
             });
 
-            var options = configuration.GetAWSOptions();
-
-            services.AddSingleton(_ => options.CreateServiceClient<IAmazonElasticLoadBalancingV2>());
-
-            services.AddScoped<ICoreSsh, CoreSsh>();
-            services.AddScoped<IDeployOrchestrator, DeployOrchestrator>();
-            services.AddScoped<IHostsService, HostsService>();
-            services.AddScoped<IDeploymentsService, DeploymentsService>();
-            services.AddScoped<IPackagesService, PackagesService>();
-            services.AddScoped<IApplicationsService, ApplicationsService>();
+            services.ConfigureAws(configuration);
+            services.ConfigureDeployToolsServices();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider)
         {
-            try
-            {
-                serviceProvider.PerformDatabaseMigrations();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Could not perform database migrations");
-                Environment.FailFast(string.Empty, ex);
-            }
+            serviceProvider.MigrateDatabase();
 
             if (env.IsDevelopment())
             {

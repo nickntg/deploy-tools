@@ -11,33 +11,31 @@ namespace DeployTools.Core.DataAccess.Repositories
 {
     public class ActiveDeploymentsRepository(ISession session) : CrudRepository<ActiveDeployment>(session), IActiveDeploymentsRepository
     {
-        private readonly ISession _session = session;
-
         public async Task<IList<ActiveDeployment>> GetDeploymentsOfPackageAsync(string packageId)
         {
-            return await _session.CreateCriteria<ActiveDeployment>()
+            return await Session.CreateCriteria<ActiveDeployment>()
                 .Add(Restrictions.Eq(nameof(ActiveDeployment.PackageId), packageId))
                 .ListAsync<ActiveDeployment>();
         }
 
         public async Task CleanupDeploymentsOfApplicationAsync(string applicationId)
         {
-            await _session.Query<ActiveDeployment>()
+            await Session.Query<ActiveDeployment>()
                 .Where(x => x.ApplicationId.Equals(applicationId))
                 .DeleteAsync();
-            await _session.FlushAsync();
+            await Session.FlushAsync();
         }
 
         public async Task<IList<ActiveDeployment>> GetDeploymentsOfHostAsync(string hostId)
         {
-            return await _session.CreateCriteria<ActiveDeployment>()
+            return await Session.CreateCriteria<ActiveDeployment>()
                 .Add(Restrictions.Eq(nameof(ActiveDeployment.HostId), hostId))
                 .ListAsync<ActiveDeployment>();
         }
 
         public async Task<IList<ActiveDeployment>> GetDeploymentsOfApplicationAsync(string applicationId)
         {
-            return await _session.CreateCriteria<ActiveDeployment>()
+            return await Session.CreateCriteria<ActiveDeployment>()
                 .Add(Restrictions.Eq(nameof(ActiveDeployment.ApplicationId), applicationId))
                 .ListAsync<ActiveDeployment>();
         }

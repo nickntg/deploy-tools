@@ -11,14 +11,14 @@ namespace DeployTools.Core.DataAccess.Repositories
     {
         public async Task<IList<Host>> GetHostsByInstanceIdAsync(string instanceId)
         {
-            return await session.CreateCriteria<Host>()
+            return await Session.CreateCriteria<Host>()
                 .Add(Restrictions.Eq(nameof(Host.InstanceId), instanceId))
                 .ListAsync<Host>();
         }
 
         public async Task<IList<Host>> GetHostsByAddressAsync(string address)
         {
-            return await session.CreateCriteria<Host>()
+            return await Session.CreateCriteria<Host>()
                 .Add(Restrictions.Eq(nameof(Host.Address), address))
                 .ListAsync<Host>();
         }

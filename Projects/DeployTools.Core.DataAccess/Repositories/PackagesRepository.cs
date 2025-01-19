@@ -11,14 +11,14 @@ namespace DeployTools.Core.DataAccess.Repositories
     {
         public async Task<IList<Package>> GetPackagesByNameAsync(string name)
         {
-            return await session.CreateCriteria<Package>()
+            return await Session.CreateCriteria<Package>()
                 .Add(Restrictions.Eq(nameof(Package.Name), name))
                 .ListAsync<Package>();
         }
 
         public async Task<IList<Package>> GetPackagesByDeployableLocationAsync(string deployableLocation)
         {
-            return await session.CreateCriteria<Package>()
+            return await Session.CreateCriteria<Package>()
                 .Add(Restrictions.Eq(nameof(Package.DeployableLocation), deployableLocation))
                 .ListAsync<Package>();
         }
