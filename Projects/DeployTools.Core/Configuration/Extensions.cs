@@ -5,6 +5,8 @@ using DeployTools.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using DeployTools.Core.Services.Background;
+using DeployTools.Core.Services.Background.Interfaces;
 using NLog;
 
 namespace DeployTools.Core.Configuration
@@ -40,6 +42,13 @@ namespace DeployTools.Core.Configuration
             services.AddScoped<IDeploymentsService, DeploymentsService>();
             services.AddScoped<IPackagesService, PackagesService>();
             services.AddScoped<IApplicationsService, ApplicationsService>();
+
+            return services;
+        }
+
+        public static IServiceCollection ConfigureDeployToolsBackgroundServices(this IServiceCollection services)
+        {
+            services.AddScoped<ITakeDownApplicationJob, TakeDownApplicationJob>();
 
             return services;
         }

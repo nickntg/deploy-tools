@@ -26,6 +26,8 @@ namespace DeployTools.Core.DataAccess.Context
             PackagesRepository = new PackagesRepository(Session);
             JournalEntriesRepository = new JournalEntriesRepository(Session);
             ActiveDeploymentsRepository = new ActiveDeploymentsRepository(Session);
+            JobLocksRepository = new JobLocksRepository(Session);
+            JobsRepository = new JobsRepository(Session);
         }
 
         public IApplicationDeploysRepository ApplicationDeploysRepository { get; }
@@ -34,6 +36,8 @@ namespace DeployTools.Core.DataAccess.Context
         public IPackagesRepository PackagesRepository { get; }
         public IJournalEntriesRepository JournalEntriesRepository { get; }
         public IActiveDeploymentsRepository ActiveDeploymentsRepository { get; }
+        public IJobLocksRepository JobLocksRepository { get; }
+        public IJobsRepository JobsRepository { get; }
 
         public void BeginTransaction()
         {

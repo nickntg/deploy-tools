@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeployTools.TestApp", "Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeployTools.Web", "Projects\DeployTools.Web\DeployTools.Web.csproj", "{FEED6E9B-D3A5-4512-BC26-4EBF78A2C513}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeployTools.Batch", "Projects\DeployTools.Batch\DeployTools.Batch.csproj", "{1F1CC2DA-0C98-4CA8-98B0-5A005CF9F183}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +46,10 @@ Global
 		{FEED6E9B-D3A5-4512-BC26-4EBF78A2C513}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FEED6E9B-D3A5-4512-BC26-4EBF78A2C513}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FEED6E9B-D3A5-4512-BC26-4EBF78A2C513}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F1CC2DA-0C98-4CA8-98B0-5A005CF9F183}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F1CC2DA-0C98-4CA8-98B0-5A005CF9F183}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F1CC2DA-0C98-4CA8-98B0-5A005CF9F183}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F1CC2DA-0C98-4CA8-98B0-5A005CF9F183}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
