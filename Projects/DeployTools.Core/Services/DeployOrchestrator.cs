@@ -19,7 +19,7 @@ namespace DeployTools.Core.Services
         {
             var package = await dbContext.PackagesRepository.GetByIdAsync(application.PackageId);
 
-            application.Port = host.NextFreePort;
+            var deployPort = host.NextFreePort;
 
             host.NextFreePort++;
 
@@ -46,7 +46,7 @@ namespace DeployTools.Core.Services
             var applicationCreateSuccessful = true;
 
             // TODO: Port belongs at active deployment instead of application.
-            Logger.Info($"Starting deployment of application {application.Name} with id {application.Id}, package {package.Name} with id {package.Id}, to host {host.Address} with id {host.Id}, at port {application.Port}");
+            Logger.Info($"Starting deployment of application {application.Name} with id {application.Id}, package {package.Name} with id {package.Id}, to host {host.Address} with id {host.Id}, at port {deployPort}");
 
             try
             {
@@ -75,7 +75,7 @@ namespace DeployTools.Core.Services
                     .Replace("{deploy_folder}", deployFolder)
                     .Replace("{deploy_executable}", $"{deployFolder}/{package.ExecutableFile}")
                     .Replace("{kestrel_name}", $"Application {application.Name}, package {package.Name}")
-                    .Replace("{listening_port}", application.Port.ToString());
+                    .Replace("{listening_port}", deployPort.ToString());
 
                 Logger.Info("Uploading service file");
                 result = await ssh.UploadContentAsync(serviceContents, $"{deployFolder}/{serviceName}");
@@ -102,10 +102,11 @@ namespace DeployTools.Core.Services
                     PackageId = application.PackageId,
                     ApplicationId = application.Id,
                     HostId = host.Id,
-                    DeployId = deploy.Id
+                    DeployId = deploy.Id,
+                    Port = deployPort
                 });
 
-                await CreateLoadBalancingAsync(application, host);
+                await CreateLoadBalancingAsync(application, host, deployPort);
 
                 /*
                  * Next steps:
@@ -149,7 +150,7 @@ namespace DeployTools.Core.Services
             }
         }
 
-        private async Task CreateLoadBalancingAsync(Application application, Host host)
+        private async Task CreateLoadBalancingAsync(Application application, Host host, int deployPort)
         {
             var targetGroupName = ConstructTargetGroupName(application.Name);
             var ruleName = ConstructRuleName(application.Name);
@@ -159,7 +160,7 @@ namespace DeployTools.Core.Services
             {
                 Name = targetGroupName,
                 Protocol = ProtocolEnum.HTTP,
-                Port = application.Port,
+                Port = deployPort,
                 VpcId = host.VpcId,
                 TargetType = TargetTypeEnum.Instance,
                 HealthCheckEnabled = true,

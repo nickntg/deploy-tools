@@ -9,10 +9,8 @@ namespace DeployTools.Core.DataAccess.Mappings
             Table("applications");
             MapBase();
 
-            Map(x => x.HostId).Column("host_id");
             Map(x => x.Name).Column("name");
             Map(x => x.PackageId).Column("package_id");
-            Map(x => x.Port).Column("port");
             Map(x => x.Domain).Column("domain");
         }
     }
