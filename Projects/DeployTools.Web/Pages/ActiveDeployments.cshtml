@@ -1,0 +1,71 @@
+﻿@page
+@model DeployTools.Web.Pages.ActiveDeploymentsModel
+@{
+    ViewData["Title"] = "Active deployments";
+}
+@{
+    <main class="pri_color_3_background pt-2">
+    <div class="container mt-4">
+        <h1 class="mb-4">Active Deployments List</h1>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                @Model.ErrorMessage
+            </div>
+        }
+
+        @if (Model.ActiveDeployments is { Count: > 0 })
+        {
+            <table class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Host ID</th>
+                    <th>Address</th>
+                    <th>Port</th>
+                    <th>Package</th>
+                    <th>Application</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var host in Model.ActiveDeployments)
+                {
+                    <tr>
+                        <td>@host.Id</td>
+                        <td>@host.HostId</td>
+                        <td>@host.HostAddress</td>
+                        <td>@host.Port</td>
+                        <td>@host.PackageName</td>
+                        <td>@host.ApplicationName</td>
+                        <td>@host.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>
+                            <form method="post" onsubmit="confirmDelete(event)">
+                                <input type="hidden" name="id" value="@host.Id"/>
+                                <button type="submit" asp-page-handler="TakeDown" class="btn btn-danger btn-sm">Take down</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No active deployments found.</p>
+        }
+    </div>
+</main>
+}
+@section Scripts
+{
+    <script>
+        function confirmDelete(event) {
+            if (!confirm("Are you sure you want to take down this deployment? This action cannot be undone.")) {
+                event.preventDefault();
+            }
+        }
+    </script>
+}
