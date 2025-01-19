@@ -16,7 +16,7 @@ namespace DeployTools.Core.DataAccess.Repositories
                 .ListAsync<Package>();
         }
 
-        public async Task<IList<Package>> GetPackagesByDeployableLocation(string deployableLocation)
+        public async Task<IList<Package>> GetPackagesByDeployableLocationAsync(string deployableLocation)
         {
             return await session.CreateCriteria<Package>()
                 .Add(Restrictions.Eq(nameof(Package.DeployableLocation), deployableLocation))

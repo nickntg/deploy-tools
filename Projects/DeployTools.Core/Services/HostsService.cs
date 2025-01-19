@@ -12,12 +12,12 @@ namespace DeployTools.Core.Services
 
         public async Task<IList<Host>> GetHostsByInstanceId(string instanceId)
         {
-            return await _dbContext.HostsRepository.GetHostsByInstanceId(instanceId);
+            return await _dbContext.HostsRepository.GetHostsByInstanceIdAsync(instanceId);
         }
 
         public async Task<IList<Host>> GetHostsByAddress(string address)
         {
-            return await _dbContext.HostsRepository.GetHostsByAddress(address);
+            return await _dbContext.HostsRepository.GetHostsByAddressAsync(address);
         }
     }
 }

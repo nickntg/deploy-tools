@@ -7,6 +7,6 @@ namespace DeployTools.Core.DataAccess.Repositories.Interfaces
     public interface IPackagesRepository : ICrudRepository<Package>
     {
         Task<IList<Package>> GetPackagesByNameAsync(string name);
-        Task<IList<Package>> GetPackagesByDeployableLocation(string deployableLocation);
+        Task<IList<Package>> GetPackagesByDeployableLocationAsync(string deployableLocation);
     }
 }

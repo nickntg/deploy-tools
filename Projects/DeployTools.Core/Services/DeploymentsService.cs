@@ -17,5 +17,10 @@ namespace DeployTools.Core.Services
         {
             return await dbContext.ActiveDeploymentsRepository.GetDeploymentsOfPackageAsync(packageId);
         }
+
+        public async Task<IList<ActiveDeployment>> GetActiveDeploymentsOfApplicationAsync(string applicationId)
+        {
+            return await dbContext.ActiveDeploymentsRepository.GetDeploymentsOfApplicationAsync(applicationId);
+        }
     }
 }

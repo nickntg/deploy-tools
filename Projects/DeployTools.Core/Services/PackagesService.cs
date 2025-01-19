@@ -15,7 +15,7 @@ namespace DeployTools.Core.Services
 
         public async Task<IList<Package>> GetPackagesByDeployableLocationAsync(string name)
         {
-            return await dbContext.PackagesRepository.GetPackagesByDeployableLocation(name);
+            return await dbContext.PackagesRepository.GetPackagesByDeployableLocationAsync(name);
         }
     }
 }

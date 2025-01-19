@@ -6,7 +6,7 @@ namespace DeployTools.Core.DataAccess.Repositories.Interfaces
 {
     public interface IHostsRepository : ICrudRepository<Host>
     {
-        Task<IList<Host>> GetHostsByInstanceId(string instanceId);
-        Task<IList<Host>> GetHostsByAddress(string address);
+        Task<IList<Host>> GetHostsByInstanceIdAsync(string instanceId);
+        Task<IList<Host>> GetHostsByAddressAsync(string address);
     }
 }
