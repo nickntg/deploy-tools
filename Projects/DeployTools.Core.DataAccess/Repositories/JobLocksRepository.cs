@@ -4,7 +4,5 @@ using NHibernate;
 
 namespace DeployTools.Core.DataAccess.Repositories
 {
-    public class JobLocksRepository(ISession session): CrudRepository<JobLock>(session), IJobLocksRepository
-    {
-    }
+    public class JobLocksRepository(ISession session): CrudRepository<JobLock>(session), IJobLocksRepository;
 }

@@ -2,7 +2,5 @@
 
 namespace DeployTools.Core.DataAccess.Repositories.Interfaces
 {
-    public interface IJobLocksRepository : ICrudRepository<JobLock>
-    {
-    }
+    public interface IJobLocksRepository : ICrudRepository<JobLock>;
 }

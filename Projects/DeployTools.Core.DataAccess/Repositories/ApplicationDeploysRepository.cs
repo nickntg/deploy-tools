@@ -4,7 +4,5 @@ using NHibernate;
 
 namespace DeployTools.Core.DataAccess.Repositories
 {
-    public class ApplicationDeploysRepository(ISession session) : CrudRepository<ApplicationDeploy>(session), IApplicationDeploysRepository
-    {
-    }
+    public class ApplicationDeploysRepository(ISession session) : CrudRepository<ApplicationDeploy>(session), IApplicationDeploysRepository;
 }

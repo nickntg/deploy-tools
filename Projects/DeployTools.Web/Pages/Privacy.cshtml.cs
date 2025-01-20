@@ -2,8 +2,6 @@
 
 namespace DeployTools.Web.Pages
 {
-    public class PrivacyModel : PageModel
-    {
-    }
+    public class PrivacyModel : PageModel;
 
 }

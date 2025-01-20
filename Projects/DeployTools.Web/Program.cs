@@ -12,15 +12,13 @@ namespace DeployTools.Web
 
         public static void Main(string[] args)
         {
-            var logger = LogManager.GetCurrentClassLogger();
-
             try
             {
                 CreateHostBuilder(args).Build().Run();
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Stopped program because of exception");
+                Log.Error(ex, "Stopped program because of exception");
                 throw;
             }
             finally

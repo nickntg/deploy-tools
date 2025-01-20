@@ -2,7 +2,5 @@
 
 namespace DeployTools.Core.DataAccess.Repositories.Interfaces
 {
-    public interface IApplicationDeploysRepository : ICrudRepository<ApplicationDeploy>
-    {
-    }
+    public interface IApplicationDeploysRepository : ICrudRepository<ApplicationDeploy>;
 }
