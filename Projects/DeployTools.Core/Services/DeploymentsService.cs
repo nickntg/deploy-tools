@@ -53,6 +53,11 @@ namespace DeployTools.Core.Services
             return await dbContext.ActiveDeploymentsRepository.GetByIdAsync(activeDeploymentId);
         }
 
+        public async Task<IList<JournalEntry>> GetJournalEntriesOfDeployAsync(string deployId)
+        {
+            return await dbContext.JournalEntriesRepository.GetJournalEntriesOfDeployAsync(deployId);
+        }
+
         private async Task SaveJob(object jobInfo, string jobType)
         {
             var job = new Job

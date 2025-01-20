@@ -11,6 +11,7 @@ namespace DeployTools.Core.Services.Background
     public class DeployApplicationJob(IDbContext dbContext, 
         IHostsService hostsService,
         IApplicationsService applicationsService,
+        IDeploymentsService deploymentsService,
         IDeployOrchestrator deployOrchestrator) : LockableJob(dbContext, nameof(DeployApplicationJob), 10), IDeployApplicationJob
     {
         public override async Task ProcessJobAsync(Job job)
@@ -31,6 +32,13 @@ namespace DeployTools.Core.Services.Background
             if (application is null)
             {
                 Logger.Warn($"Could not find application with id {jobInfo.ApplicationId} to deploy to host with id {jobInfo.HostId}");
+                return;
+            }
+
+            var deployedApplication = await deploymentsService.GetActiveDeploymentsOfApplicationAsync(application.Id);
+            if (deployedApplication.Count > 0)
+            {
+                Logger.Error($"Could not redeploy application with id {jobInfo.ApplicationId} - already deployed.");
                 return;
             }
 

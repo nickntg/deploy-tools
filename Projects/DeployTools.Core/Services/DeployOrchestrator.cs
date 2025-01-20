@@ -149,11 +149,24 @@ namespace DeployTools.Core.Services
             }
         }
 
+        private void EmitJournalEntry(JournalEventArgs entry, string command)
+        {
+            entry.CommandCompleted = DateTimeOffset.UtcNow;
+            entry.CommandExecuted = command;
+            entry.WasSuccessful = true;
+
+            SshOnJournalEvent(this, entry);
+        }
+
         private async Task CreateLoadBalancingAsync(Application application, Host host, int deployPort)
         {
             var targetGroupName = ConstructTargetGroupName(application.Name);
             var ruleName = ConstructRuleName(application.Name);
 
+            var journal = new JournalEventArgs
+            {
+                CommandStarted = DateTimeOffset.UtcNow
+            };
             Logger.Info($"Creating target group {targetGroupName}");
             var targetGroupResponse = await elbClient.CreateTargetGroupAsync(new CreateTargetGroupRequest
             {
@@ -170,8 +183,11 @@ namespace DeployTools.Core.Services
                 UnhealthyThresholdCount = 3
             });
 
+            EmitJournalEntry(journal, $"Create target group {targetGroupName}");
+
             var targetGroup = targetGroupResponse.TargetGroups[0];
 
+            journal.CommandStarted = DateTimeOffset.UtcNow;
             Logger.Info($"Registering instance {host.InstanceId} to target group {targetGroupName}");
             await elbClient.RegisterTargetsAsync(new RegisterTargetsRequest
             {
@@ -179,11 +195,16 @@ namespace DeployTools.Core.Services
                 Targets = [new() { Id = host.InstanceId }]
             });
 
+            EmitJournalEntry(journal, $"Register instance {host.InstanceId} to target group {targetGroupName}");
+
+            journal.CommandStarted = DateTimeOffset.UtcNow;
             Logger.Info("Retrieving listeners");
             var listeners = await elbClient.DescribeListenersAsync(new DescribeListenersRequest
             {
                 LoadBalancerArn = host.AssignedLoadBalancerArn
             });
+
+            EmitJournalEntry(journal, $"Retrieve listeners");
 
             var portToFind = listeners.Listeners.Count == 1
                 ? 80
@@ -198,6 +219,7 @@ namespace DeployTools.Core.Services
                     continue;
                 }
 
+                journal.CommandStarted = DateTimeOffset.UtcNow;
                 Logger.Info($"Adding rule to listener - domain {application.Domain}");
                 await elbClient.CreateRuleAsync(new CreateRuleRequest
                 {
@@ -231,6 +253,8 @@ namespace DeployTools.Core.Services
                         }
                     ]
                 });
+
+                EmitJournalEntry(journal, $"Add rule to listener for domain {application.Domain}");
             }
         }
 
@@ -240,54 +264,69 @@ namespace DeployTools.Core.Services
 
             var targetGroupName = ConstructTargetGroupName(application.Name);
 
+            var journal = new JournalEventArgs
+            {
+                CommandStarted = DateTimeOffset.UtcNow
+            };
             Logger.Info("Retrieving load balancers");
             var results = await elbClient.DescribeTargetGroupsAsync(new DescribeTargetGroupsRequest
             {
                 LoadBalancerArn = host.AssignedLoadBalancerArn
             });
 
+            EmitJournalEntry(journal, "Retrieve load balancers");
+
             Logger.Info($"Trying to find target group {targetGroupName}");
             var foundTargetGroup = results.TargetGroups.FirstOrDefault(x => x.TargetGroupName.Equals(targetGroupName));
 
             if (foundTargetGroup is not null)
             {
+                journal.CommandStarted = DateTimeOffset.UtcNow;
                 Logger.Info("Listing listeners");
                 var listeners = await elbClient.DescribeListenersAsync(new DescribeListenersRequest
                 {
                     LoadBalancerArn = host.AssignedLoadBalancerArn
                 });
 
+                EmitJournalEntry(journal, "Listing listeners");
+
                 foreach (var listener in listeners.Listeners)
                 {
                     var rule = ConstructRuleName(application.Name);
                     
+                    journal.CommandStarted = DateTimeOffset.UtcNow;
                     Logger.Info($"Trying to find rule {rule} in listener {listener.ListenerArn}");
-
                     var rules = await elbClient.DescribeRulesAsync(new DescribeRulesRequest
                     {
                         ListenerArn = listener.ListenerArn
                     });
+
+                    EmitJournalEntry(journal, $"Trying to find rule {rule} in listener {listener.ListenerArn}");
 
                     var foundRule = rules.Rules.FirstOrDefault(x =>
                         x.Actions[0].TargetGroupArn.Equals(foundTargetGroup.TargetGroupArn));
 
                     if (foundRule is not null)
                     {
+                        journal.CommandStarted = DateTimeOffset.UtcNow;
                         Logger.Info($"Removing rule {foundRule.RuleArn}");
-
                         await elbClient.DeleteRuleAsync(new DeleteRuleRequest
                         {
                             RuleArn = foundRule.RuleArn
                         });
+
+                        EmitJournalEntry(journal, $"Remove rule {foundRule.RuleArn}");
                     }
                 }
 
+                journal.CommandStarted = DateTimeOffset.UtcNow;
                 Logger.Info($"Removing target group {foundTargetGroup.TargetGroupArn}");
-
                 await elbClient.DeleteTargetGroupAsync(new DeleteTargetGroupRequest
                 {
                     TargetGroupArn = foundTargetGroup.TargetGroupArn
                 });
+
+                EmitJournalEntry(journal, $"Remove target group {foundTargetGroup.TargetGroupArn}");
             }
         }
 

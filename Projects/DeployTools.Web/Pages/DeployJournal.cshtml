@@ -1,0 +1,45 @@
+﻿@page
+@using DeployTools.Web.Helpers
+@model DeployTools.Web.Pages.DeployJournalModel
+@{
+    ViewData["Title"] = "Deploy journal";
+}
+@{
+<div class="container mt-4">
+    <h1 class="mb-4">Edit Host</h1>
+    @if (Model.JournalEntries is { Count: > 0 })
+    {
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Command</th>
+                <th>Started</th>
+                <th>Completed</th>
+                <th>Time taken</th>
+                <th>Success</th>
+                <th>Output</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var entry in Model.JournalEntries)
+            {
+                <tr>
+                    <td>@entry.Id</td>
+                    <td>@entry.CommandExecuted</td>
+                    <td>@entry.CommandStarted.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@entry.CommandCompleted.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@entry.CommandStarted.HumanReadableTimeDifference(entry.CommandCompleted)</td>
+                    <td>@entry.WasSuccessful</td>
+                    <td>@entry.Output</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>No journal entries found.</p>
+    }
+</div>
+}

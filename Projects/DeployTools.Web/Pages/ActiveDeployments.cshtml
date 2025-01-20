@@ -31,20 +31,24 @@
                 </tr>
                 </thead>
                 <tbody>
-                @foreach (var host in Model.ActiveDeployments)
+                @foreach (var deployment in Model.ActiveDeployments)
                 {
                     <tr>
-                        <td>@host.Id</td>
-                        <td>@host.HostId</td>
-                        <td>@host.HostAddress</td>
-                        <td>@host.Port</td>
-                        <td>@host.PackageName</td>
-                        <td>@host.ApplicationName</td>
-                        <td>@host.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@deployment.Id</td>
+                        <td>@deployment.HostId</td>
+                        <td>@deployment.HostAddress</td>
+                        <td>@deployment.Port</td>
+                        <td>@deployment.PackageName</td>
+                        <td>@deployment.ApplicationName</td>
+                        <td>@deployment.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
                         <td>
                             <form method="post" onsubmit="confirmDelete(event)">
-                                <input type="hidden" name="id" value="@host.Id"/>
+                                <input type="hidden" name="id" value="@deployment.Id"/>
                                 <button type="submit" asp-page-handler="TakeDown" class="btn btn-danger btn-sm">Take down</button>
+                            </form>
+                            <form method="get" action="/DeployJournal" class="d-inline">
+                                <input type="hidden" name="id" value="@deployment.DeployId" />
+                                <button type="submit" class="btn btn-dark btn-sm mt-1">View journal</button>
                             </form>
                         </td>
                     </tr>
