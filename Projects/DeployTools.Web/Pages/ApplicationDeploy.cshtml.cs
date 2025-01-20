@@ -11,7 +11,7 @@ namespace DeployTools.Web.Pages
         IApplicationsService applicationsService,
         IDeploymentsService deploymentsService) : PageModel
     {
-        [BindProperty] public ApplicationDeploy ApplicationDeploy { get; set; }
+        [BindProperty] public ApplicationDeployExtended ApplicationDeploy { get; set; }
         [BindProperty] public string ErrorMessage { get; set; }
         public IList<Host> Hosts { get; set; }
 
@@ -22,14 +22,14 @@ namespace DeployTools.Web.Pages
             {
                 return NotFound();
             }
-
+            
             Hosts = await hostsService.GetAllAsync();
 
-            ApplicationDeploy = new ApplicationDeploy
+            ApplicationDeploy = new ApplicationDeployExtended
             {
                 ApplicationName = application.Name
             };
-            
+
             return Page();
         }
 
@@ -43,7 +43,7 @@ namespace DeployTools.Web.Pages
         }
     }
 
-    public class ApplicationDeploy
+    public class ApplicationDeployExtended
     {
         public string ApplicationName { get; set; }
         public string HostId { get; set; }

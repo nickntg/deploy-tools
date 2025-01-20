@@ -1,0 +1,52 @@
+﻿@page
+@model DeployTools.Web.Pages.DeploymentsModel
+@{
+    ViewData["Title"] = "Deployments";
+}
+@{
+    <main class="pri_color_3_background pt-2">
+    <div class="container mt-4">
+        <h1 class="mb-4">Deployments List</h1>
+
+        @if (Model.Deployments is { Count: > 0 })
+        {
+            <table class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Application ID</th>
+                    <th>Host ID</th>
+                    <th>Completed</th>
+                    <th>Successful</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var deploy in Model.Deployments)
+                {
+                    <tr>
+                        <td>@deploy.Id</td>
+                        <td>@deploy.ApplicationId</td>
+                        <td>@deploy.HostId</td>
+                        <td>@deploy.IsCompleted</td>
+                        <td>@deploy.IsSuccessful</td>
+                        <td>@deploy.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>
+                            <form method="get" action="/DeployJournal" class="d-inline">
+                                <input type="hidden" name="id" value="@deploy.Id" />
+                                <button type="submit" class="btn btn-primary btn-sm mt-1">View journal</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No deployments found.</p>
+        }
+    </div>
+    </main>
+}

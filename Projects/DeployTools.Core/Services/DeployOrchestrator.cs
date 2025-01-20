@@ -204,7 +204,7 @@ namespace DeployTools.Core.Services
                 LoadBalancerArn = host.AssignedLoadBalancerArn
             });
 
-            EmitJournalEntry(journal, $"Retrieve listeners");
+            EmitJournalEntry(journal, "Retrieve listeners");
 
             var portToFind = listeners.Listeners.Count == 1
                 ? 80
@@ -342,8 +342,6 @@ namespace DeployTools.Core.Services
 
             try
             {
-                await TakeDownLoadBalancingAsync(application, host);
-
                 if (!await ssh.IsConnectedAsync())
                 {
                     wasConnected = false;
@@ -360,6 +358,8 @@ namespace DeployTools.Core.Services
                     }
                 }
 
+                await TakeDownLoadBalancingAsync(application, host);
+                
                 Logger.Info("Checking for service file");
                 var result = await ssh.FileExistsAsync(serviceLocation);
                 if (!result.IsSuccessful)

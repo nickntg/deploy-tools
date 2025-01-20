@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using DeployTools.Core.DataAccess.Entities;
 using DeployTools.Core.DataAccess.Repositories.Interfaces;
 using NHibernate;
+using NHibernate.Criterion;
 
 namespace DeployTools.Core.DataAccess.Repositories
 {
@@ -39,6 +40,7 @@ namespace DeployTools.Core.DataAccess.Repositories
 		public async Task<IList<T>> GetAllAsync()
 		{
 			return await Session.CreateCriteria<T>()
+                .AddOrder(new Order(nameof(BaseEntity.CreatedAt), false))
 				.ListAsync<T>();
 		}
 	}

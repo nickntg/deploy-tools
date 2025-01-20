@@ -31,6 +31,11 @@ namespace DeployTools.Core.Services
             return await dbContext.ActiveDeploymentsRepository.GetDeploymentsOfApplicationAsync(applicationId);
         }
 
+        public async Task<IList<ApplicationDeploy>> GetAllDeploymentsAsync()
+        {
+            return await dbContext.ApplicationDeploysRepository.GetAllAsync();
+        }
+
         public async Task StartTakeDownAsync(string activeDeploymentId)
         {
             await SaveJob(new TakeDownJobInfo
