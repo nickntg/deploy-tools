@@ -24,7 +24,6 @@ namespace DeployTools.Core.Services
             host.NextFreePort++;
 
             await dbContext.HostsRepository.UpdateAsync(host);
-            await dbContext.ApplicationsRepository.UpdateAsync(application);
 
             var deploy = new ApplicationDeploy
             {
@@ -68,13 +67,14 @@ namespace DeployTools.Core.Services
                     "Making package application executable");
 
                 var serviceContents =
-                    "[Unit]\r\nDescription={kestrel_name}\r\nAfter=network.target\r\n\r\n[Service]\r\nWorkingDirectory={deploy_folder}\r\nExecStart={deploy_executable}\r\nRestart=always\r\n# User and group under which the service runs\r\nUser=ec2-user\r\nGroup=ec2-user\r\nEnvironment=DOTNET_ENVIRONMENT=Production\r\nEnvironment=ASPNETCORE_URLS=http://0.0.0.0:{listening_port}\r\n\r\n[Install]\r\nWantedBy=multi-user.target";
+                    "[Unit]\r\nDescription={kestrel_name}\r\nAfter=network.target\r\n\r\n[Service]\r\nWorkingDirectory={deploy_folder}\r\nExecStart={deploy_executable}\r\nRestart=always\r\n# User and group under which the service runs\r\nUser={user}\r\nGroup={user}\r\nEnvironment=DOTNET_ENVIRONMENT=Production\r\nEnvironment=ASPNETCORE_URLS=http://0.0.0.0:{listening_port}\r\n\r\n[Install]\r\nWantedBy=multi-user.target";
 
                 serviceContents = serviceContents
                     .Replace("{deploy_folder}", deployFolder)
                     .Replace("{deploy_executable}", $"{deployFolder}/{package.ExecutableFile}")
                     .Replace("{kestrel_name}", $"Application {application.Name}, package {package.Name}")
-                    .Replace("{listening_port}", deployPort.ToString());
+                    .Replace("{listening_port}", deployPort.ToString())
+                    .Replace("{user}", host.SshUserName);
 
                 Logger.Info("Uploading service file");
                 result = await ssh.UploadContentAsync(serviceContents, $"{deployFolder}/{serviceName}");
@@ -106,14 +106,6 @@ namespace DeployTools.Core.Services
                 });
 
                 await CreateLoadBalancingAsync(application, host, deployPort);
-
-                /*
-                 * Next steps:
-                 *  - Add a new target group for the new application and port.
-                 *  - Add the target group to the load balancer.
-                 *  - Add a rule matching an incoming host name to the newly created target group.
-                 *  - Clean up as necessary if something fails.
-                 */
             }
             catch (Exception ex)
             {
@@ -473,3 +465,4 @@ namespace DeployTools.Core.Services
         }
     }
 }
+
