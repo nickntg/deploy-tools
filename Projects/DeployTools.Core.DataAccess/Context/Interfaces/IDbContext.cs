@@ -14,6 +14,8 @@ namespace DeployTools.Core.DataAccess.Context.Interfaces
         public IActiveDeploymentsRepository ActiveDeploymentsRepository { get; }
         public IJobLocksRepository JobLocksRepository { get; }
         public IJobsRepository JobsRepository { get; }
+        public IRdsEnginesRepository RdsEnginesRepository { get; }
+        public IRdsPackagesRepository RdsPackagesRepository { get; }
 
         void BeginTransaction();
         void Commit();

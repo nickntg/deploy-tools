@@ -25,6 +25,10 @@ namespace DeployTools.Core.Services
             {
                 Repo = (ICrudRepository<T>)dbContext.ApplicationsRepository;
             }
+            else if (typeof(T) == typeof(RdsPackage))
+            {
+                Repo = (ICrudRepository<T>)dbContext.RdsPackagesRepository;
+            }
         }
 
         public async Task<T> SaveAsync(T entity)

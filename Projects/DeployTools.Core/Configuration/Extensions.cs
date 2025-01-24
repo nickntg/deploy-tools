@@ -5,6 +5,7 @@ using DeployTools.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using Amazon.RDS;
 using DeployTools.Core.Services.Background;
 using DeployTools.Core.Services.Background.Interfaces;
 using NLog;
@@ -30,6 +31,7 @@ namespace DeployTools.Core.Configuration
             var options = configuration.GetAWSOptions();
 
             services.AddSingleton(_ => options.CreateServiceClient<IAmazonElasticLoadBalancingV2>());
+            services.AddSingleton(_ => options.CreateServiceClient<IAmazonRDS>());
 
             return services;
         }
@@ -42,6 +44,8 @@ namespace DeployTools.Core.Configuration
             services.AddScoped<IDeploymentsService, DeploymentsService>();
             services.AddScoped<IPackagesService, PackagesService>();
             services.AddScoped<IApplicationsService, ApplicationsService>();
+            services.AddScoped<IRdsEnginesService, RdsEnginesService>();
+            services.AddScoped<IRdsPackagesService, RdsPackagesService>();
 
             return services;
         }

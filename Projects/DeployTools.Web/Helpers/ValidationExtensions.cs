@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 using DeployTools.Core.DataAccess.Entities;
 using DeployTools.Core.Services.Interfaces;
 
@@ -6,17 +7,41 @@ namespace DeployTools.Web.Helpers
 {
     public static class ValidationExtensions
     {
+        public static async Task<string> ValidateRdsPackage(this RdsPackage package, IRdsPackagesService rdsPackageService)
+        {
+            try
+            {
+                CheckEmpty(package.Engine, "Engine cannot be empty");
+                CheckEmpty(package.EngineVersion, "Engine version cannot be empty");
+                CheckEmpty(package.DbInstance, "DB instance cannot be empty");
+                CheckEmpty(package.VpcId, "VPC ID cannot be empty");
+                CheckEmpty(package.VpcSecurityGroupId, "VPC security group ID cannot be empty");
+            }
+            catch (ValidationException ex)
+            {
+                return ex.Message;
+            }
+
+            var existing = await rdsPackageService.GetPackagesByNameAsync(package.Name);
+            if (existing.Count > 1 || (existing.Count == 1 && existing[0].Id != package.Id))
+            {
+                return "Package with the same name already exists";
+            }
+
+            return null;
+        }
+
         public static async Task<string> ValidateApplication(this Application application,
             IApplicationsService applicationsService)
         {
-            if (string.IsNullOrEmpty(application.Name))
+            try
             {
-                return "Name cannot be empty";
+                CheckEmpty(application.Name, "Name cannot be empty");
+                CheckEmpty(application.Domain, "Domain cannot be empty");
             }
-
-            if (string.IsNullOrEmpty(application.Domain))
+            catch (ValidationException ex)
             {
-                return "Domain cannot be empty";
+                return ex.Message;
             }
 
             var existing = await applicationsService.GetApplicationsByNameAsync(application.Name);
@@ -49,19 +74,15 @@ namespace DeployTools.Web.Helpers
         }
         public static async Task<string> ValidatePackage(this Package package, IPackagesService packagesService)
         {
-            if (string.IsNullOrEmpty(package.DeployableLocation))
+            try
             {
-                return "Deployable location cannot be empty";
+                CheckEmpty(package.DeployableLocation, "Deployable location cannot be empty");
+                CheckEmpty(package.ExecutableFile, "Executable file cannot be empty");
+                CheckEmpty(package.Name, "Package name cannot be empty");
             }
-
-            if (string.IsNullOrEmpty(package.ExecutableFile))
+            catch (ValidationException ex)
             {
-                return "Executable file cannot be empty";
-            }
-
-            if (string.IsNullOrEmpty(package.Name))
-            {
-                return "Package name cannot be empty";
+                return ex.Message;
             }
 
             var existing = await packagesService.GetPackagesByNameAsync(package.Name);
@@ -81,34 +102,19 @@ namespace DeployTools.Web.Helpers
 
         public static async Task<string> ValidateHost(this Host host, IHostsService hostsService)
         {
-            if (string.IsNullOrEmpty(host.AssignedLoadBalancerArn))
+            try
             {
-                return "Assigned load balancer cannot be empty";
-            }
+                CheckEmpty(host.AssignedLoadBalancerArn, "Assigned load balancer cannot be empty");
+                CheckEmpty(host.Address, "Address cannot be empty");
+                CheckEmpty(host.InstanceId, "Instance id cannot be empty");
+                CheckEmpty(host.KeyFile, "Key file cannot be empty");
+                CheckEmpty(host.SshUserName, "SSH user name cannot be empty");
+                CheckEmpty(host.VpcId, "VPC id cannot be empty");
 
-            if (string.IsNullOrEmpty(host.Address))
-            {
-                return "Address cannot be empty";
             }
-
-            if (string.IsNullOrEmpty(host.InstanceId))
+            catch (ValidationException ex)
             {
-                return "Instance id cannot be empty";
-            }
-
-            if (string.IsNullOrEmpty(host.KeyFile))
-            {
-                return "Key file cannot be empty";
-            }
-
-            if (string.IsNullOrEmpty(host.SshUserName))
-            {
-                return "SSH user name cannot be empty";
-            }
-
-            if (string.IsNullOrEmpty(host.VpcId))
-            {
-                return "VPC id cannot be empty";
+                return ex.Message;
             }
 
             var existing = await hostsService.GetHostsByAddress(host.Address);
@@ -124,6 +130,14 @@ namespace DeployTools.Web.Helpers
             }
 
             return null;
+        }
+
+        private static void CheckEmpty(string value, string errorMessage)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                throw new ValidationException(errorMessage);
+            }
         }
     }
 }

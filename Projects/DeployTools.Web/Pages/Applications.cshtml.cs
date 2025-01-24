@@ -11,10 +11,12 @@ namespace DeployTools.Web.Pages
     public class ApplicationExtended : Application
     {
         public string PackageName { get; set; }
+        public string RdsPackageName { get; set; }
     }
 
     public class ApplicationsModel(IApplicationsService applicationsService, 
         IPackagesService packagesService,
+        IRdsPackagesService rdsPackagesService,
         IDeploymentsService deploymentsService) : PageModel
     {
         [BindProperty] public IList<ApplicationExtended> Applications { get; set; }
@@ -24,11 +26,15 @@ namespace DeployTools.Web.Pages
         {
             var applications = await applicationsService.GetAllAsync();
             var packages = await packagesService.GetAllAsync();
+            var rdsPackages = await rdsPackagesService.GetAllAsync();
 
             Applications = new List<ApplicationExtended>();
             foreach (var application in applications)
             {
                 var package = packages.First(x => x.Id == application.PackageId);
+                var rdsPackageName = string.IsNullOrEmpty(application.RdsPackageId)
+                    ? string.Empty
+                    : rdsPackages.First(x => x.Id == application.RdsPackageId).Name;
                 Applications.Add(new()
                 {
                     Id = application.Id,
@@ -36,7 +42,8 @@ namespace DeployTools.Web.Pages
                     Domain = application.Domain,
                     PackageId = application.PackageId,
                     CreatedAt = application.CreatedAt,
-                    PackageName = package.Name
+                    PackageName = package.Name,
+                    RdsPackageName = rdsPackageName
                 });
             }
 

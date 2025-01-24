@@ -8,11 +8,12 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace DeployTools.Web.Pages
 {
-    public class ApplicationEditModel(IApplicationsService applicationsService, IPackagesService packagesService) : PageModel
+    public class ApplicationEditModel(IApplicationsService applicationsService, IPackagesService packagesService, IRdsPackagesService rdsPackagesService) : PageModel
     {
         [BindProperty] public Application Application { get; set; }
         [BindProperty] public string ErrorMessage { get; set; }
         public IList<Package> ValidPackages { get; set; }
+        public IList<RdsPackage> ValidRdsPackages { get; set; }
 
         public async Task<IActionResult> OnGet(string id)
         {
@@ -23,6 +24,7 @@ namespace DeployTools.Web.Pages
             }
 
             ValidPackages = await packagesService.GetAllAsync();
+            ValidRdsPackages = await rdsPackagesService.GetAllAsync();
 
             return Page();
         }
