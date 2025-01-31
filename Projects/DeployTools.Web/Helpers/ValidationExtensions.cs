@@ -11,6 +11,7 @@ namespace DeployTools.Web.Helpers
         {
             try
             {
+                CheckEmpty(package.Name, "Name cannot be empty");
                 CheckEmpty(package.Engine, "Engine cannot be empty");
                 CheckEmpty(package.EngineVersion, "Engine version cannot be empty");
                 CheckEmpty(package.DbInstance, "DB instance cannot be empty");
