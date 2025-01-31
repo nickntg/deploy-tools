@@ -1,7 +1,6 @@
 using FluentMigrator;
-using DeployTools.Core.DataAccess.Migrations;
 
-namespace AccountsApi.Core.DataAccess.Migrations
+namespace DeployTools.Core.DataAccess.Migrations
 {
 	[Migration(202501130720)]
 	public class _20250113072000_AddAssignedLoadBalancer : BaseMigration

@@ -1,7 +1,6 @@
 using FluentMigrator;
-using DeployTools.Core.DataAccess.Migrations;
 
-namespace AccountsApi.Core.DataAccess.Migrations
+namespace DeployTools.Core.DataAccess.Migrations
 {
 	[Migration(202501190530)]
 	public class _20250119053000_RearrangePortAndHost : BaseMigration

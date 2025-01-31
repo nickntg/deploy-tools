@@ -1,7 +1,6 @@
 using FluentMigrator;
-using DeployTools.Core.DataAccess.Migrations;
 
-namespace AccountsApi.Core.DataAccess.Migrations
+namespace DeployTools.Core.DataAccess.Migrations
 {
 	[Migration(202501121825)]
 	public class _20250112182500_AddActiveDeployments : BaseMigration
