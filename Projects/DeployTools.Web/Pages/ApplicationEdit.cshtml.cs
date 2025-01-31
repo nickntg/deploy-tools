@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DeployTools.Core.DataAccess.Entities;
@@ -49,6 +50,9 @@ namespace DeployTools.Web.Pages
 
             existingApplication.Domain = Application.Domain;
             existingApplication.PackageId = Application.PackageId;
+            existingApplication.RdsPackageId = Application.RdsPackageId.Equals("NONE", StringComparison.InvariantCultureIgnoreCase)
+                    ? null
+                    : Application.RdsPackageId;
 
             await applicationsService.UpdateAsync(existingApplication);
             

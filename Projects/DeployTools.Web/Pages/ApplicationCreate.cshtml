@@ -1,4 +1,5 @@
 ﻿@page
+@using DeployTools.Core.DataAccess.Entities
 @model DeployTools.Web.Pages.ApplicationCreateModel
 @{
     ViewData["Title"] = "New Application";
@@ -24,10 +25,41 @@
         <div class="mb-3">
             <label for="PackageId" class="form-label">Package</label>
             <select class="form-select" id="PackageId" name="Application.PackageId" required>
-            @foreach (var package in Model.ValidPackages)
-            {
-                <option value="@package.Id">@package.Name</option>
-            }
+                @foreach (var package in Model.ValidPackages)
+                {
+                    if (Model.Application.PackageId.Equals(package.Id))
+                    {
+                        <option value="@package.Id" selected>@package.Name</option>
+                    }
+                    else
+                    {
+                        <option value="@package.Id">@package.Name</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="RdsPackageId" class="form-label">RDS Package</label>
+            <select class="form-select" id="RdsPackageId" name="Application.RdsPackageId">
+                @if (Model.Application.RdsPackageId is null)
+                {
+                    <option value="NONE" selected>No RDS Package</option>
+                }
+                else
+                {
+                    <option value="NONE">No RDS Package</option>
+                }
+                @foreach (var package in Model.ValidRdsPackages)
+                {
+                    if (package.Id.Equals(Model.Application.RdsPackageId))
+                    {
+                        <option value="@package.Id" selected>@package.Name</option>
+                    }
+                    else
+                    {
+                        <option value="@package.Id">@package.Name</option>
+                    }
+                }
             </select>
         </div>
         <button type="submit" class="btn btn-success">Save</button>

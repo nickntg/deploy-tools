@@ -1,0 +1,55 @@
+﻿@page
+@model DeployTools.Web.Pages.RdsPackageEditModel
+@{
+    ViewData["Title"] = "Edit RDS Package";
+}
+@{
+<div class="container mt-4">
+    <h1 class="mb-4">Edit RDS Package</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @Model.ErrorMessage
+        </div>
+    }
+    <form method="post">
+        <div class="mb-3">
+            <label for="Id" class="form-label">Id</label>
+            <input type="text" class="form-control" id="Id" name="RdsPackage.Id" value="@Model.RdsPackage.Id" required disabled>
+        </div>
+        <div class="mb-3">
+            <label for="Name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="Name" name="RdsPackage.Name" value="@Model.RdsPackage.Name" required disabled>
+        </div>
+        <div class="mb-3">
+            <label for="Engine" class="form-label">Engine</label>
+            <input type="text" class="form-control" id="Engine" name="RdsPackage.Engine" value="@Model.RdsPackage.Engine" required>
+        </div>
+        <div class="mb-3">
+            <label for="EngineVersion" class="form-label">Engine Version</label>
+            <input type="text" class="form-control" id="EngineVersion" name="RdsPackage.EngineVersion" value="@Model.RdsPackage.EngineVersion" required>
+        </div>
+        <div class="mb-3">
+            <label for="DbInstance" class="form-label">DB Instance</label>
+            <input type="text" class="form-control" id="DbInstance" name="RdsPackage.DbInstance" value="@Model.RdsPackage.DbInstance" required>
+        </div>
+        <div class="mb-3">
+            <label for="StorageType" class="form-label">Storage Type</label>
+            <input type="text" class="form-control" id="StorageType" name="RdsPackage.StorageType" value="@Model.RdsPackage.StorageType">
+        </div>
+        <div class="mb-3">
+            <label for="StorageInGigabytes" class="form-label">GB</label>
+            <input type="number" class="form-control" id="StorageInGigabytes" name="RdsPackage.StorageInGigabytes" value="@Model.RdsPackage.StorageInGigabytes">
+        </div>
+        <div class="mb-3">
+            <label for="VpcId" class="form-label">VPC ID</label>
+            <input type="text" class="form-control" id="VpcId" name="RdsPackage.VpcId" value="@Model.RdsPackage.VpcId" required>
+        </div>
+        <div class="mb-3">
+            <label for="VpcSecurityGroupId" class="form-label">VPC Security Group ID</label>
+            <input type="text" class="form-control" id="VpcSecurityGroupId" name="RdsPackage.VpcSecurityGroupId" value="@Model.RdsPackage.VpcSecurityGroupId" required>
+        </div>
+        <button type="submit" class="btn btn-success">Save</button>
+    </form>
+</div>
+}
