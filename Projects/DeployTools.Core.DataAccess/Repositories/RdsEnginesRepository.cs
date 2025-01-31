@@ -12,7 +12,7 @@ namespace DeployTools.Core.DataAccess.Repositories
     {
         public async Task ClearAsync()
         {
-            await Session.Query<ActiveDeployment>()
+            await Session.Query<AwsRdsEngine>()
                 .DeleteAsync();
             await Session.FlushAsync();
         }
