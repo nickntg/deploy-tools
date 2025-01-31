@@ -49,6 +49,10 @@
             <label for="VpcSecurityGroupId" class="form-label">VPC Security Group ID</label>
             <input type="text" class="form-control" id="VpcSecurityGroupId" name="RdsPackage.VpcSecurityGroupId" value="@Model.RdsPackage.VpcSecurityGroupId" required>
         </div>
+        <div class="mb-3">
+            <label for="DbSubnetGroupName" class="form-label">DB Subnet Group Name</label>
+            <input type="text" class="form-control" id="DbSubnetGroupName" name="RdsPackage.DbSubnetGroupName" value="@Model.RdsPackage.DbSubnetGroupName" required>
+        </div>
         <button type="submit" class="btn btn-success">Save</button>
     </form>
 </div>

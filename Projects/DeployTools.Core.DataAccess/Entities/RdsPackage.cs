@@ -10,5 +10,6 @@
         public virtual int? StorageInGigabytes { get; set; }
         public virtual string VpcId { get; set; }
         public virtual string VpcSecurityGroupId { get; set; }
+        public virtual string DbSubnetGroupName { get; set; }
     }
 }

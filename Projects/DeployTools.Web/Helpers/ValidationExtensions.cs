@@ -17,6 +17,15 @@ namespace DeployTools.Web.Helpers
                 CheckEmpty(package.DbInstance, "DB instance cannot be empty");
                 CheckEmpty(package.VpcId, "VPC ID cannot be empty");
                 CheckEmpty(package.VpcSecurityGroupId, "VPC security group ID cannot be empty");
+                CheckEmpty(package.DbSubnetGroupName, "DB subnet group name cannot be empty");
+
+                if (!string.IsNullOrEmpty(package.StorageType))
+                {
+                    if (package.StorageInGigabytes is null or < 20)
+                    {
+                        throw new ValidationException("Storage must be over 20 if it is specified");
+                    }
+                }
             }
             catch (ValidationException ex)
             {

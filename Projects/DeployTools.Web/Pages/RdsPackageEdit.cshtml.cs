@@ -51,6 +51,7 @@ namespace DeployTools.Web.Pages
             existingPackage.StorageType = RdsPackage.StorageType;
             existingPackage.VpcId = RdsPackage.VpcId;
             existingPackage.VpcSecurityGroupId = RdsPackage.VpcSecurityGroupId;
+            existingPackage.DbSubnetGroupName = RdsPackage.DbSubnetGroupName;
 
             await rdsPackagesService.UpdateAsync(existingPackage);
             

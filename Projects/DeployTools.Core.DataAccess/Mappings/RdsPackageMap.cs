@@ -17,6 +17,7 @@ namespace DeployTools.Core.DataAccess.Mappings
             Map(x => x.StorageType).Column("storage_type");
             Map(x => x.VpcId).Column("vpc_id");
             Map(x => x.VpcSecurityGroupId).Column("vpc_security_group_id");
+            Map(x => x.DbSubnetGroupName).Column("db_subnet_group_name");
         }
     }
 }

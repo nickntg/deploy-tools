@@ -14,6 +14,7 @@ namespace DeployTools.Core.DataAccess.Mappings
             Map(x => x.HostId).Column("host_id");
             Map(x => x.DeployId).Column("deploy_id");
             Map(x => x.Port).Column("port");
+            Map(x => x.RdsArn).Column("rds_arn");
         }
     }
 }

@@ -26,6 +26,7 @@
                     <th>Port</th>
                     <th>Package</th>
                     <th>Application</th>
+                    <th>RDS ARN</th>
                     <th>Created At</th>
                     <th>Actions</th>
                 </tr>
@@ -40,6 +41,7 @@
                         <td>@deployment.Port</td>
                         <td>@deployment.PackageName</td>
                         <td>@deployment.ApplicationName</td>
+                        <td>@deployment.RdsArn</td>
                         <td>@deployment.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
                         <td>
                             <form method="post" onsubmit="confirmDelete(event)">

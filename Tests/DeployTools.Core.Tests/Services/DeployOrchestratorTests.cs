@@ -1,5 +1,7 @@
 ﻿using Amazon.ElasticLoadBalancingV2;
 using Amazon.ElasticLoadBalancingV2.Model;
+using Amazon.RDS;
+using Amazon.RDS.Model;
 using DeployTools.Core.DataAccess.Entities;
 using DeployTools.Core.Models;
 using DeployTools.Core.Services;
@@ -75,6 +77,7 @@ namespace DeployTools.Core.Tests.Services
                 {
                     Assert.Equal("package id", deploy.PackageId);
                     Assert.Equal("application id", deploy.ApplicationId);
+                    Assert.Equal("db instance arn", deploy.RdsArn);
                     Assert.Equal(42, deploy.Port);
                 })
                 .Returns(Task.FromResult(new ActiveDeployment()));
@@ -157,14 +160,81 @@ namespace DeployTools.Core.Tests.Services
                 })
                 .Returns(Task.FromResult(new ApplicationDeploy()));
 
-            var service = new DeployOrchestrator(dbContext, ssh, elbClient);
+            A.CallTo(() => dbContext.RdsPackagesRepository.GetByIdAsync("rds package id"))
+                .Returns(new RdsPackage
+                {
+                    DbInstance = "db instance",
+                    DbSubnetGroupName = "subnet group name",
+                    Engine = "db engine",
+                    EngineVersion = "db engine version",
+                    Name = "name",
+                    Id = "rds package id",
+                    StorageInGigabytes = 42,
+                    StorageType = "storage type",
+                    VpcSecurityGroupId = "vpc security group id",
+                    VpcId = "vpc id"
+                });
+
+            var rdsClient = A.Fake<IAmazonRDS>(x => x.Strict());
+            A.CallTo(() =>
+                    rdsClient.CreateDBInstanceAsync(A<CreateDBInstanceRequest>.Ignored, A<CancellationToken>.Ignored))
+                .Invokes((CreateDBInstanceRequest request, CancellationToken _) =>
+                {
+                    Assert.Equal("application-db-instance", request.DBInstanceIdentifier);
+                    Assert.Equal("db instance", request.DBInstanceClass);
+                    Assert.Equal("db engine", request.Engine);
+                    Assert.Equal("db engine version", request.EngineVersion);
+                    Assert.Equal(42, request.AllocatedStorage);
+                    Assert.Equal(42, request.MaxAllocatedStorage);
+                    Assert.Equal("storage type", request.StorageType);
+                    Assert.Equal("subnet group name", request.DBSubnetGroupName);
+                    Assert.Single(request.VpcSecurityGroupIds);
+                    Assert.Equal("vpc security group id", request.VpcSecurityGroupIds[0]);
+                    Assert.False(request.PubliclyAccessible);
+                    Assert.False(request.MultiAZ);
+                    Assert.True(request.StorageEncrypted);
+                    Assert.False(request.DeletionProtection);
+                    Assert.Equal(0, request.MonitoringInterval);
+                    Assert.Equal(7, request.BackupRetentionPeriod);
+                })
+                .Returns(new CreateDBInstanceResponse
+                {
+                    DBInstance = new DBInstance
+                    {
+                        DBInstanceArn = "db instance arn"
+                    }
+                });
+            A.CallTo(() =>
+                    rdsClient.DescribeDBInstancesAsync(A<DescribeDBInstancesRequest>.Ignored,
+                        A<CancellationToken>.Ignored))
+                .Invokes((DescribeDBInstancesRequest request, CancellationToken _) =>
+                {
+                    Assert.Equal("db instance arn", request.DBInstanceIdentifier);
+                })
+                .Returns(new DescribeDBInstancesResponse
+                {
+                    DBInstances =
+                    [
+                        new()
+                        {
+                            Endpoint = new Endpoint
+                            {
+                                Address = "address",
+                                Port = 42
+                            }
+                        }
+                    ]
+                });
+
+            var service = new DeployOrchestrator(dbContext, ssh, elbClient, rdsClient);
 
             await service.DeployAsync(new Application
             {
                 Id = "application id",
                 Name = "application",
                 Domain = "www.domain.com",
-                PackageId = "package id"
+                PackageId = "package id",
+                RdsPackageId = "rds package id"
             }, new Host
             {
                 Id = "host id",
@@ -208,7 +278,7 @@ namespace DeployTools.Core.Tests.Services
             A.CallTo(() => dbContext.ActiveDeploymentsRepository.SaveAsync(A<ActiveDeployment>.Ignored))
                 .MustHaveHappenedOnceExactly();
             A.CallTo(() => dbContext.JournalEntriesRepository.SaveAsync(A<JournalEntry>.Ignored))
-                .MustHaveHappened(4, Times.Exactly);
+                .MustHaveHappened(5, Times.Exactly);
 
             A.CallTo(() =>
                     elbClient.CreateTargetGroupAsync(A<CreateTargetGroupRequest>.Ignored, A<CancellationToken>.Ignored))
@@ -226,6 +296,17 @@ namespace DeployTools.Core.Tests.Services
                 .MustHaveHappenedOnceExactly();
 
             A.CallTo(() => dbContext.ApplicationDeploysRepository.UpdateAsync(A<ApplicationDeploy>.Ignored))
+                .MustHaveHappenedOnceExactly();
+
+            A.CallTo(() => dbContext.RdsPackagesRepository.GetByIdAsync("rds package id"))
+                .MustHaveHappenedOnceExactly();
+
+            A.CallTo(() =>
+                rdsClient.CreateDBInstanceAsync(A<CreateDBInstanceRequest>.Ignored, A<CancellationToken>.Ignored))
+                .MustHaveHappenedOnceExactly();
+            A.CallTo(() =>
+                rdsClient.DescribeDBInstancesAsync(A<DescribeDBInstancesRequest>.Ignored,
+                    A<CancellationToken>.Ignored))
                 .MustHaveHappenedOnceExactly();
         }
     }

@@ -1,16 +1,23 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.ElasticLoadBalancingV2;
 using Amazon.ElasticLoadBalancingV2.Model;
+using Amazon.RDS;
+using Amazon.RDS.Model;
 using DeployTools.Core.DataAccess.Context.Interfaces;
 using DeployTools.Core.DataAccess.Entities;
+using DeployTools.Core.Helpers;
 using DeployTools.Core.Services.Interfaces;
 using NLog;
 
 namespace DeployTools.Core.Services
 {
-    public class DeployOrchestrator(IDbContext dbContext, ICoreSsh ssh, IAmazonElasticLoadBalancingV2 elbClient) : IDeployOrchestrator
+    public class DeployOrchestrator(IDbContext dbContext, 
+        ICoreSsh ssh, 
+        IAmazonElasticLoadBalancingV2 elbClient, 
+        IAmazonRDS rdsClient) : IDeployOrchestrator
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private string _deployId;
@@ -46,8 +53,14 @@ namespace DeployTools.Core.Services
 
             Logger.Info($"Starting deployment of application {application.Name} with id {application.Id}, package {package.Name} with id {package.Id}, to host {host.Address} with id {host.Id}, at port {deployPort}");
 
+            DatabaseConfiguration dbInfo = null;
+
             try
             {
+                dbInfo = await CreateDatabaseAsync(application.Name, application.RdsPackageId);
+
+                // TODO: We still need to incorporate the db info into a connection string.
+
                 Logger.Info("Connecting to host");
                 if (!await Connect(host))
                 {
@@ -102,7 +115,8 @@ namespace DeployTools.Core.Services
                     ApplicationId = application.Id,
                     HostId = host.Id,
                     DeployId = deploy.Id,
-                    Port = deployPort
+                    Port = deployPort,
+                    RdsArn = dbInfo.DbArn
                 });
 
                 await CreateLoadBalancingAsync(application, host, deployPort);
@@ -113,7 +127,7 @@ namespace DeployTools.Core.Services
 
                 Logger.Error(ex, "Application creation failed - rolling back changes");
 
-                await TakeDownAsync(application, host, _deployId);
+                await TakeDownAsync(application, host, _deployId, dbInfo?.DbArn);
             }
             finally
             {
@@ -137,7 +151,7 @@ namespace DeployTools.Core.Services
             {
                 var host = await dbContext.HostsRepository.GetByIdAsync(deployment.HostId);
 
-                await TakeDownAsync(application, host, deployment.DeployId);
+                await TakeDownAsync(application, host, deployment.DeployId, deployment.RdsArn);
             }
         }
 
@@ -148,6 +162,110 @@ namespace DeployTools.Core.Services
             entry.WasSuccessful = true;
 
             SshOnJournalEvent(this, entry);
+        }
+
+        private async Task<DatabaseConfiguration> CreateDatabaseAsync(string applicationName, string rdsPackageId)
+        {
+            if (string.IsNullOrEmpty(rdsPackageId))
+            {
+                return new DatabaseConfiguration();
+            }
+
+            Logger.Info($"Retrieving RDS package with id {rdsPackageId}");
+
+            var rdsPackage = await dbContext.RdsPackagesRepository.GetByIdAsync(rdsPackageId);
+            
+            if (rdsPackage is null)
+            {
+                Logger.Error($"RDS package with id {rdsPackageId} not found");
+                throw new InvalidOperationException("RDS package not found");
+            }
+
+            var dbConfiguration = new DatabaseConfiguration
+            {
+                DbName = RandomExtensions.GenerateDatabaseName(),
+                DbPassword = 32.GenerateRandomPassword(),
+                DbUserName = "master"
+            };
+
+            var journalEntry = new JournalEventArgs
+            {
+                CommandStarted = DateTimeOffset.UtcNow
+            };
+
+            var createRequest = new CreateDBInstanceRequest
+            {
+                DBInstanceIdentifier = ConstructDbInstanceName(applicationName),
+                Engine = rdsPackage.Engine,
+                EngineVersion = rdsPackage.EngineVersion,
+                MasterUsername = dbConfiguration.DbUserName,
+                MasterUserPassword = dbConfiguration.DbPassword,
+                DBInstanceClass = rdsPackage.DbInstance,
+                VpcSecurityGroupIds = [rdsPackage.VpcSecurityGroupId],
+                PubliclyAccessible = false,
+                MultiAZ = false,
+                BackupRetentionPeriod = 7,
+                StorageEncrypted = true,
+                DeletionProtection = false,
+                DBSubnetGroupName = rdsPackage.DbSubnetGroupName,
+                DBName = dbConfiguration.DbName,
+                MonitoringInterval = 0
+            };
+
+            if (!string.IsNullOrEmpty(rdsPackage.StorageType))
+            {
+                createRequest.StorageType = rdsPackage.StorageType;
+                createRequest.AllocatedStorage = rdsPackage.StorageInGigabytes ?? 20;
+                createRequest.MaxAllocatedStorage = rdsPackage.StorageInGigabytes ?? 20;
+            }
+
+            try
+            {
+                var response = await rdsClient.CreateDBInstanceAsync(createRequest);
+
+                dbConfiguration.DbArn = response.DBInstance.DBInstanceArn;
+
+                EmitJournalEntry(journalEntry, $"RDS instance {dbConfiguration.DbArn} created");
+
+                var startedTime = DateTimeOffset.UtcNow;
+
+                while (DateTimeOffset.UtcNow.Subtract(startedTime).TotalSeconds < 5*60)
+                {
+                    Logger.Info($"Waiting for RDS with arn {dbConfiguration.DbArn} to get address info");
+                    Thread.Sleep(5000);
+
+                    var describeResponse = await rdsClient.DescribeDBInstancesAsync(new DescribeDBInstancesRequest
+                    {
+                        DBInstanceIdentifier = dbConfiguration.DbArn
+                    });
+
+                    var instance = describeResponse.DBInstances[0];
+
+                    if (instance.Endpoint is not null)
+                    {
+                        dbConfiguration.Address = instance.Endpoint.Address;
+                        dbConfiguration.Port = instance.Endpoint.Port;
+
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(dbConfiguration.Address))
+                {
+                    Logger.Error($"Could not get address info from RDS instance {dbConfiguration.DbArn} - timeout exceeded");
+                    throw new InvalidOperationException("Could not get RDS address info");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"RDS creation failed, RDS package id is {rdsPackageId}");
+
+                await TakeDownDatabaseAsync(dbConfiguration.DbArn);
+
+                throw;
+            }
+
+            return dbConfiguration;
         }
 
         private async Task CreateLoadBalancingAsync(Application application, Host host, int deployPort)
@@ -250,6 +368,37 @@ namespace DeployTools.Core.Services
             }
         }
 
+        private async Task TakeDownDatabaseAsync(string rdsArn)
+        {
+            if (string.IsNullOrEmpty(rdsArn))
+            {
+                return;
+            }
+
+            Logger.Info($"Starting takedown of RDS database with arn {rdsArn}");
+
+            var journalEntry = new JournalEventArgs
+            {
+                CommandStarted = DateTimeOffset.UtcNow
+            };
+
+            var dbInstance = await rdsClient.DescribeDBInstancesAsync(new DescribeDBInstancesRequest
+            {
+                DBInstanceIdentifier = rdsArn
+            });
+
+            await rdsClient.DeleteDBInstanceAsync(new DeleteDBInstanceRequest
+            {
+                DBInstanceIdentifier = dbInstance.DBInstances[0].DBInstanceIdentifier,
+                DeleteAutomatedBackups = true,
+                SkipFinalSnapshot = true
+            });
+
+            EmitJournalEntry(journalEntry, $"RDS instance {rdsArn} deleted");
+
+            Logger.Info($"RDS instance with arn {rdsArn} deleted");
+        }
+
         private async Task TakeDownLoadBalancingAsync(Application application, Host host)
         {
             Logger.Info($"Starting takedown of load balancing of application {application.Name} with id {application.Id}, from host {host.Address} with id {host.Id}");
@@ -322,7 +471,7 @@ namespace DeployTools.Core.Services
             }
         }
 
-        private async Task TakeDownAsync(Application application, Host host, string deployId)
+        private async Task TakeDownAsync(Application application, Host host, string deployId, string rdsArn)
         {
             var deployFolder = ConstructDeployFolder(host.SshUserName, application.Name);
             var serviceName = ConstructServiceName(application.Name);
@@ -349,6 +498,8 @@ namespace DeployTools.Core.Services
                         return;
                     }
                 }
+
+                await TakeDownDatabaseAsync(rdsArn);
 
                 await TakeDownLoadBalancingAsync(application, host);
                 
@@ -394,6 +545,13 @@ namespace DeployTools.Core.Services
                 }
             }
 
+        }
+
+        private static string ConstructDbInstanceName(string applicationName)
+        {
+            return $"{applicationName
+                .Replace(" ", "_")
+                .Replace("_", "-")}-db-instance";
         }
 
         private static string ConstructTargetGroupName(string applicationName)
@@ -462,6 +620,16 @@ namespace DeployTools.Core.Services
                 Output = e.Output,
                 WasSuccessful = e.WasSuccessful
             }).Wait();
+        }
+
+        internal class DatabaseConfiguration
+        {
+            public string DbName { get; set; }
+            public string DbUserName { get; set; }
+            public string DbPassword { get; set; }
+            public string Address { get; set; }
+            public int Port { get; set; }
+            public string DbArn { get; set; }
         }
     }
 }
