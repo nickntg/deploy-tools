@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using DeployTools.Core.DataAccess.Entities;
 
 namespace DeployTools.Core.Services.Interfaces
 {
-    public interface ICrudService<T>
+    public interface ICrudService<T> where T: BaseEntity
     {
         Task<T> SaveAsync(T entity);
         Task<T> UpdateAsync(T entity);
