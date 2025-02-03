@@ -1,5 +1,4 @@
 ﻿@page
-@using DeployTools.Core.DataAccess.Entities
 @model DeployTools.Web.Pages.ApplicationCreateModel
 @{
     ViewData["Title"] = "New Application";
@@ -27,7 +26,7 @@
             <select class="form-select" id="PackageId" name="Application.PackageId" required>
                 @foreach (var package in Model.ValidPackages)
                 {
-                    if (Model.Application.PackageId.Equals(package.Id))
+                    if (package.Id.Equals(Model.Application.RdsPackageId))
                     {
                         <option value="@package.Id" selected>@package.Name</option>
                     }

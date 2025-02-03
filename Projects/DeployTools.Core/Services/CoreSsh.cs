@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DeployTools.Core.Models;
@@ -175,7 +177,7 @@ namespace DeployTools.Core.Services
             {
                 journal.WasSuccessful = true;
 
-                using (var ms = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)))
+                using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(content)))
                 {
                     return await UploadStream(ms, remoteFile);
                 }
@@ -192,7 +194,10 @@ namespace DeployTools.Core.Services
             }
         }
 
-        public async Task<SshResult> UploadDirectoryAsync(string localDirectory, string remoteDirectory)
+        public async Task<SshResult> UploadDirectoryAsync(string localDirectory, 
+            string remoteDirectory,
+            string configFileEndsWith,
+            Dictionary<string, string> fileContentsReplaceMap)
         {
             if (_sshClient is null || !_sshClient.IsConnected)
             {
@@ -272,9 +277,28 @@ namespace DeployTools.Core.Services
 
                             try
                             {
-                                await using (var fs = File.OpenRead(file))
+                                if (!string.IsNullOrEmpty(configFileEndsWith) &&
+                                    file.EndsWith(configFileEndsWith))
                                 {
-                                    sftpClient.UploadFile(fs, remoteFile);
+                                    var fileContents = await File.ReadAllTextAsync(file, Encoding.UTF8);
+                                    foreach (var key in fileContentsReplaceMap.Keys)
+                                    {
+                                        fileContents = fileContents.Replace(key, fileContentsReplaceMap[key]);
+                                    }
+
+                                    journal.CommandExecuted += "\nUpdated file contents\n" + fileContents;
+
+                                    using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(fileContents)))
+                                    {
+                                        sftpClient.UploadFile(ms, remoteFile);
+                                    }
+                                }
+                                else
+                                {
+                                    await using (var fs = File.OpenRead(file))
+                                    {
+                                        sftpClient.UploadFile(fs, remoteFile);
+                                    }
                                 }
 
                                 journal.WasSuccessful = true;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,8 +60,6 @@ namespace DeployTools.Core.Services
             {
                 dbInfo = await CreateDatabaseAsync(application.Name, application.RdsPackageId);
 
-                // TODO: We still need to incorporate the db info into a connection string.
-
                 Logger.Info("Connecting to host");
                 if (!await Connect(host))
                 {
@@ -69,7 +68,20 @@ namespace DeployTools.Core.Services
                 }
 
                 Logger.Info("Uploading package");
-                var result = await ssh.UploadDirectoryAsync(package.DeployableLocation, deployFolder);
+
+                var configFileEndsWith = string.Empty;
+                var replaceMap = new Dictionary<string, string>();
+                if (!string.IsNullOrEmpty(dbInfo.DbArn))
+                {
+                    configFileEndsWith = ".Production.json";
+                    replaceMap.Add("{user_id}", dbInfo.DbUserName);
+                    replaceMap.Add("{user_password}", dbInfo.DbPassword);
+                    replaceMap.Add("{db_host}", dbInfo.Address);
+                    replaceMap.Add("{db_port}", dbInfo.Port.ToString());
+                    replaceMap.Add("{db_name}", dbInfo.DbName);
+                }
+
+                var result = await ssh.UploadDirectoryAsync(package.DeployableLocation, deployFolder, configFileEndsWith, replaceMap);
                 if (!result.IsSuccessful)
                 {
                     Logger.Error("Upload of package failed");
@@ -107,6 +119,8 @@ namespace DeployTools.Core.Services
 
                 await RunCommandWithLogging($"sudo systemctl status {serviceName}", "Getting service status");
 
+                await CreateLoadBalancingAsync(application, host, deployPort);
+
                 await dbContext.ActiveDeploymentsRepository.CleanupDeploymentsOfApplicationAsync(application.Id);
 
                 await dbContext.ActiveDeploymentsRepository.SaveAsync(new ActiveDeployment
@@ -118,8 +132,6 @@ namespace DeployTools.Core.Services
                     Port = deployPort,
                     RdsArn = dbInfo.DbArn
                 });
-
-                await CreateLoadBalancingAsync(application, host, deployPort);
             }
             catch (Exception ex)
             {
@@ -190,7 +202,7 @@ namespace DeployTools.Core.Services
 
             var journalEntry = new JournalEventArgs
             {
-                CommandStarted = DateTimeOffset.UtcNow
+                CommandStarted = DateTimeOffset.UtcNow,
             };
 
             var createRequest = new CreateDBInstanceRequest
@@ -245,6 +257,9 @@ namespace DeployTools.Core.Services
                     {
                         dbConfiguration.Address = instance.Endpoint.Address;
                         dbConfiguration.Port = instance.Endpoint.Port;
+
+                        journalEntry.CommandStarted = DateTimeOffset.UtcNow;
+                        EmitJournalEntry(journalEntry, $"RDS instance {dbConfiguration.DbArn} created and configured, host={dbConfiguration.Address}, port={dbConfiguration.Port}, db={dbConfiguration.DbName}, user={dbConfiguration.DbUserName}, password={dbConfiguration.DbPassword}");
 
                         break;
                     }
@@ -330,6 +345,27 @@ namespace DeployTools.Core.Services
                 }
 
                 journal.CommandStarted = DateTimeOffset.UtcNow;
+                Logger.Info($"Retrieving all rules of listener {listener.ListenerArn} to determine next priority");
+                var listRulesResponse = await elbClient.DescribeRulesAsync(new DescribeRulesRequest
+                {
+                    ListenerArn = listener.ListenerArn
+                });
+                EmitJournalEntry(journal, $"List rules of listener {listener.ListenerArn}");
+
+                var priority = 0;
+
+                if (listRulesResponse is not null && listRulesResponse.Rules.Count > 0)
+                {
+                    var numeric = listRulesResponse.Rules.Where(x => int.TryParse(x.Priority, out _)).ToList();
+                    if (numeric.Count > 0)
+                    {
+                        priority = int.Parse(numeric.Max(x => x.Priority));
+                    }
+                }
+
+                priority++;
+
+                journal.CommandStarted = DateTimeOffset.UtcNow;
                 Logger.Info($"Adding rule to listener - domain {application.Domain}");
                 await elbClient.CreateRuleAsync(new CreateRuleRequest
                 {
@@ -342,7 +378,7 @@ namespace DeployTools.Core.Services
                         }
                     ],
                     ListenerArn = listener.ListenerArn,
-                    Priority = 1,
+                    Priority = priority,
                     Actions =
                     [
                         new()
@@ -409,13 +445,13 @@ namespace DeployTools.Core.Services
             {
                 CommandStarted = DateTimeOffset.UtcNow
             };
-            Logger.Info("Retrieving load balancers");
+            Logger.Info("Retrieving target groups of load balancers");
             var results = await elbClient.DescribeTargetGroupsAsync(new DescribeTargetGroupsRequest
             {
                 LoadBalancerArn = host.AssignedLoadBalancerArn
             });
 
-            EmitJournalEntry(journal, "Retrieve load balancers");
+            EmitJournalEntry(journal, "Retrieve target groups of load balancers");
 
             Logger.Info($"Trying to find target group {targetGroupName}");
             var foundTargetGroup = results.TargetGroups.FirstOrDefault(x => x.TargetGroupName.Equals(targetGroupName));
@@ -468,6 +504,33 @@ namespace DeployTools.Core.Services
                 });
 
                 EmitJournalEntry(journal, $"Remove target group {foundTargetGroup.TargetGroupArn}");
+            }
+            else
+            {
+                // Target group was not attached to the load balancer. We need to search all target groups.
+                journal.CommandStarted = DateTimeOffset.UtcNow;
+                Logger.Info("Retrieving all target groups");
+                results = await elbClient.DescribeTargetGroupsAsync(new DescribeTargetGroupsRequest());
+
+                EmitJournalEntry(journal, "Retrieve all target groups");
+
+                foundTargetGroup = results.TargetGroups.FirstOrDefault(x => x.TargetGroupName.Equals(targetGroupName));
+
+                if (foundTargetGroup is not null)
+                {
+                    journal.CommandStarted = DateTimeOffset.UtcNow;
+                    Logger.Info($"Removing target group {foundTargetGroup.TargetGroupArn}");
+                    await elbClient.DeleteTargetGroupAsync(new DeleteTargetGroupRequest
+                    {
+                        TargetGroupArn = foundTargetGroup.TargetGroupArn
+                    });
+
+                    EmitJournalEntry(journal, $"Remove target group {foundTargetGroup.TargetGroupArn}");
+                }
+                else
+                {
+                    Logger.Warn($"Target group named {targetGroupName} not found");
+                }
             }
         }
 

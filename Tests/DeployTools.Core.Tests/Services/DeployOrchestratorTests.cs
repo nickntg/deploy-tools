@@ -45,7 +45,7 @@ namespace DeployTools.Core.Tests.Services
 
             A.CallTo(() => ssh.ConnectAsync("address", "ssh user name", "key file"))
                 .Returns(Task.FromResult(SshResult.Success()));
-            A.CallTo(() => ssh.UploadDirectoryAsync("location", deployFolder))
+            A.CallTo(() => ssh.UploadDirectoryAsync("location", deployFolder, A<string>.Ignored, A<Dictionary<string, string>>.Ignored))
                 .Returns(Task.FromResult(SshResult.Success()));
             A.CallTo(() => ssh.RunCommandAsync($"chmod +x {deployFolder}/file"))
                 .Returns(Task.FromResult(SshResult.Success()));
@@ -148,6 +148,11 @@ namespace DeployTools.Core.Tests.Services
                     Assert.Contains("*.www.domain.com", request.Conditions[0].HostHeaderConfig.Values);
                 })
                 .Returns(Task.FromResult(new CreateRuleResponse()));
+            A.CallTo(() => elbClient.DescribeRulesAsync(A<DescribeRulesRequest>.Ignored, A<CancellationToken>.Ignored))
+                .Returns(Task.FromResult(new DescribeRulesResponse
+                {
+                    Rules = []
+                }));
 
             A.CallTo(() => ssh.DisconnectAsync())
                 .DoesNothing();
@@ -256,7 +261,7 @@ namespace DeployTools.Core.Tests.Services
 
             A.CallTo(() => ssh.ConnectAsync("address", "ssh user name", "key file"))
                 .MustHaveHappenedOnceExactly();
-            A.CallTo(() => ssh.UploadDirectoryAsync("location", deployFolder))
+            A.CallTo(() => ssh.UploadDirectoryAsync("location", deployFolder, A<string>.Ignored, A<Dictionary<string, string>>.Ignored))
                 .MustHaveHappenedOnceExactly();
             A.CallTo(() => ssh.RunCommandAsync($"chmod +x {deployFolder}/file"))
                 .MustHaveHappenedOnceExactly();
@@ -278,7 +283,7 @@ namespace DeployTools.Core.Tests.Services
             A.CallTo(() => dbContext.ActiveDeploymentsRepository.SaveAsync(A<ActiveDeployment>.Ignored))
                 .MustHaveHappenedOnceExactly();
             A.CallTo(() => dbContext.JournalEntriesRepository.SaveAsync(A<JournalEntry>.Ignored))
-                .MustHaveHappened(5, Times.Exactly);
+                .MustHaveHappened(7, Times.Exactly);
 
             A.CallTo(() =>
                     elbClient.CreateTargetGroupAsync(A<CreateTargetGroupRequest>.Ignored, A<CancellationToken>.Ignored))
@@ -290,6 +295,8 @@ namespace DeployTools.Core.Tests.Services
                     elbClient.DescribeListenersAsync(A<DescribeListenersRequest>.Ignored, A<CancellationToken>.Ignored))
                 .MustHaveHappenedOnceExactly();
             A.CallTo(() => elbClient.CreateRuleAsync(A<CreateRuleRequest>.Ignored, A<CancellationToken>.Ignored))
+                .MustHaveHappenedOnceExactly();
+            A.CallTo(() => elbClient.DescribeRulesAsync(A<DescribeRulesRequest>.Ignored, A<CancellationToken>.Ignored))
                 .MustHaveHappenedOnceExactly();
 
             A.CallTo(() => ssh.DisconnectAsync())
