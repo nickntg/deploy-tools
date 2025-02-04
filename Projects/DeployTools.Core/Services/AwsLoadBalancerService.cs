@@ -10,6 +10,115 @@ namespace DeployTools.Core.Services
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
+        public static async Task<DeleteTargetGroupResponse> DeleteTargetGroupAsync(
+            IAmazonElasticLoadBalancingV2 elbClient,
+            string targetGroupArn,
+            Action<JournalEventArgs> logFunction)
+        {
+            Log.Info($"Removing target group {targetGroupArn}");
+
+            var @event = new JournalEventArgs
+            {
+                CommandExecuted = $"Removing target group {targetGroupArn}",
+                WasSuccessful = true
+            };
+
+            try
+            {
+                return await elbClient.DeleteTargetGroupAsync(new DeleteTargetGroupRequest
+                {
+                    TargetGroupArn = targetGroupArn
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex);
+
+                @event.WasSuccessful = false;
+
+                throw;
+            }
+            finally
+            {
+                logFunction(@event);
+            }
+        }
+
+        public static async Task<DeleteRuleResponse> DeleteRuleAsync(IAmazonElasticLoadBalancingV2 elbClient,
+            string ruleArn,
+            Action<JournalEventArgs> logFunction)
+        {
+            Log.Info($"Removing rule {ruleArn}");
+
+            var @event = new JournalEventArgs
+            {
+                CommandExecuted = $"Removing rule {ruleArn}",
+                WasSuccessful = true
+            };
+
+            try
+            {
+                return await elbClient.DeleteRuleAsync(new DeleteRuleRequest
+                {
+                    RuleArn = ruleArn
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex);
+
+                @event.WasSuccessful = false;
+
+                throw;
+            }
+            finally
+            {
+                logFunction(@event);
+            }
+        }
+
+        public static async Task<DescribeTargetGroupsResponse> DescribeTargetGroupsAsync(
+            IAmazonElasticLoadBalancingV2 elbClient,
+            string loadBalancerArn,
+            Action<JournalEventArgs> logFunction)
+        {
+            var message = string.IsNullOrEmpty(loadBalancerArn)
+                ? $"Retrieving target groups of load balancer {loadBalancerArn}"
+                : "Retrieving all target groups";
+
+            Log.Info(message);
+
+            var @event = new JournalEventArgs
+            {
+                CommandExecuted = message,
+                WasSuccessful = true
+            };
+
+            try
+            {
+                var request = new DescribeTargetGroupsRequest();
+
+                if (!string.IsNullOrEmpty(loadBalancerArn))
+                {
+                    request.LoadBalancerArn = loadBalancerArn;
+                }
+
+                return await elbClient.DescribeTargetGroupsAsync(request);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex);
+
+                @event.WasSuccessful = false;
+
+                throw;
+            }
+            finally
+            {
+                logFunction(@event);
+            }
+
+        }
         public static async Task<CreateRuleResponse> CreateRuleAsync(IAmazonElasticLoadBalancingV2 elbClient,
             string ruleName,
             string listenerArn,
@@ -79,26 +188,20 @@ namespace DeployTools.Core.Services
             string listenerArn,
             Action<JournalEventArgs> logFunction)
         {
-            var message = string.IsNullOrEmpty(listenerArn) ? "List rules" : $"List rules for listener {listenerArn}";
-
             var @event = new JournalEventArgs
             {
-                CommandExecuted = message,
+                CommandExecuted = $"List rules for listener {listenerArn}",
                 WasSuccessful = true
             };
 
-            Log.Info(message);
+            Log.Info($"List rules for listener {listenerArn}");
 
             try
             {
-                var request = new DescribeRulesRequest();
-
-                if (!string.IsNullOrEmpty(listenerArn))
+                return await elbClient.DescribeRulesAsync(new DescribeRulesRequest
                 {
-                    request.ListenerArn = listenerArn;
-                }
-
-                return await elbClient.DescribeRulesAsync(request);
+                    ListenerArn = listenerArn
+                });
             }
             catch (Exception ex)
             {
@@ -226,5 +329,35 @@ namespace DeployTools.Core.Services
                 logFunction(@event);
             }
         }
+
+        //private static async Task<AmazonWebServiceResponse> ExecuteCommandAsync(string message, 
+        //    Func<Task<AmazonWebServiceResponse>> callFunc,
+        //    Action<JournalEventArgs> logFunction)
+        //{
+        //    Log.Info(message);
+
+        //    var @event = new JournalEventArgs
+        //    {
+        //        CommandExecuted = message,
+        //        WasSuccessful = true
+        //    };
+
+        //    try
+        //    {
+        //        return await callFunc();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Error(ex);
+
+        //        @event.WasSuccessful = false;
+
+        //        throw;
+        //    }
+        //    finally
+        //    {
+        //        logFunction(@event);
+        //    }
+        //}
     }
 }

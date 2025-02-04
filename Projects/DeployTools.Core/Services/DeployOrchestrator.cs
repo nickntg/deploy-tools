@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.ElasticLoadBalancingV2;
-using Amazon.ElasticLoadBalancingV2.Model;
 using Amazon.RDS;
 using Amazon.RDS.Model;
 using DeployTools.Core.DataAccess.Context.Interfaces;
@@ -370,91 +369,49 @@ namespace DeployTools.Core.Services
 
             var targetGroupName = ConstructTargetGroupName(application.Name);
 
-            var journal = new JournalEventArgs
-            {
-                CommandStarted = DateTimeOffset.UtcNow
-            };
-            Logger.Info("Retrieving target groups of load balancers");
-            var results = await elbClient.DescribeTargetGroupsAsync(new DescribeTargetGroupsRequest
-            {
-                LoadBalancerArn = host.AssignedLoadBalancerArn
-            });
-
-            EmitJournalEntry(journal, "Retrieve target groups of load balancers");
+            var results = await AwsLoadBalancerService.DescribeTargetGroupsAsync(elbClient,
+                host.AssignedLoadBalancerArn, args => SshOnJournalEvent(this, args));
 
             Logger.Info($"Trying to find target group {targetGroupName}");
             var foundTargetGroup = results.TargetGroups.FirstOrDefault(x => x.TargetGroupName.Equals(targetGroupName));
 
             if (foundTargetGroup is not null)
             {
-                journal.CommandStarted = DateTimeOffset.UtcNow;
-                Logger.Info("Listing listeners");
-                var listeners = await elbClient.DescribeListenersAsync(new DescribeListenersRequest
-                {
-                    LoadBalancerArn = host.AssignedLoadBalancerArn
-                });
-
-                EmitJournalEntry(journal, "Listing listeners");
+                var listeners = await AwsLoadBalancerService.DescribeListenersAsync(elbClient,
+                    host.AssignedLoadBalancerArn, args => SshOnJournalEvent(this, args));
 
                 foreach (var listener in listeners.Listeners)
                 {
-                    var rule = ConstructRuleName(application.Name);
-                    
-                    journal.CommandStarted = DateTimeOffset.UtcNow;
-                    Logger.Info($"Trying to find rule {rule} in listener {listener.ListenerArn}");
-                    var rules = await elbClient.DescribeRulesAsync(new DescribeRulesRequest
-                    {
-                        ListenerArn = listener.ListenerArn
-                    });
-
-                    EmitJournalEntry(journal, $"Trying to find rule {rule} in listener {listener.ListenerArn}");
+                    var rules = await AwsLoadBalancerService.DescribeRulesAsync(elbClient, listener.ListenerArn,
+                        args => SshOnJournalEvent(this, args));
 
                     var foundRule = rules.Rules.FirstOrDefault(x =>
                         x.Actions[0].TargetGroupArn.Equals(foundTargetGroup.TargetGroupArn));
 
                     if (foundRule is not null)
                     {
-                        journal.CommandStarted = DateTimeOffset.UtcNow;
-                        Logger.Info($"Removing rule {foundRule.RuleArn}");
-                        await elbClient.DeleteRuleAsync(new DeleteRuleRequest
-                        {
-                            RuleArn = foundRule.RuleArn
-                        });
-
-                        EmitJournalEntry(journal, $"Remove rule {foundRule.RuleArn}");
+                        await AwsLoadBalancerService.DeleteRuleAsync(elbClient, foundRule.RuleArn,
+                            args => SshOnJournalEvent(this, args));
                     }
                 }
 
-                journal.CommandStarted = DateTimeOffset.UtcNow;
-                Logger.Info($"Removing target group {foundTargetGroup.TargetGroupArn}");
-                await elbClient.DeleteTargetGroupAsync(new DeleteTargetGroupRequest
-                {
-                    TargetGroupArn = foundTargetGroup.TargetGroupArn
-                });
-
-                EmitJournalEntry(journal, $"Remove target group {foundTargetGroup.TargetGroupArn}");
+                await AwsLoadBalancerService.DeleteTargetGroupAsync(elbClient,
+                    foundTargetGroup.TargetGroupArn,
+                    args => SshOnJournalEvent(this, args));
             }
             else
             {
                 // Target group was not attached to the load balancer. We need to search all target groups.
-                journal.CommandStarted = DateTimeOffset.UtcNow;
-                Logger.Info("Retrieving all target groups");
-                results = await elbClient.DescribeTargetGroupsAsync(new DescribeTargetGroupsRequest());
-
-                EmitJournalEntry(journal, "Retrieve all target groups");
-
+                results = await AwsLoadBalancerService.DescribeTargetGroupsAsync(elbClient, null,
+                    args => SshOnJournalEvent(this, args));
+                
                 foundTargetGroup = results.TargetGroups.FirstOrDefault(x => x.TargetGroupName.Equals(targetGroupName));
 
                 if (foundTargetGroup is not null)
                 {
-                    journal.CommandStarted = DateTimeOffset.UtcNow;
-                    Logger.Info($"Removing target group {foundTargetGroup.TargetGroupArn}");
-                    await elbClient.DeleteTargetGroupAsync(new DeleteTargetGroupRequest
-                    {
-                        TargetGroupArn = foundTargetGroup.TargetGroupArn
-                    });
-
-                    EmitJournalEntry(journal, $"Remove target group {foundTargetGroup.TargetGroupArn}");
+                    await AwsLoadBalancerService.DeleteTargetGroupAsync(elbClient,
+                        foundTargetGroup.TargetGroupArn,
+                        args => SshOnJournalEvent(this, args));
                 }
                 else
                 {
