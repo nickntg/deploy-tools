@@ -288,48 +288,16 @@ namespace DeployTools.Core.Services
             var targetGroupName = ConstructTargetGroupName(application.Name);
             var ruleName = ConstructRuleName(application.Name);
 
-            var journal = new JournalEventArgs
-            {
-                CommandStarted = DateTimeOffset.UtcNow
-            };
-            Logger.Info($"Creating target group {targetGroupName}");
-            var targetGroupResponse = await elbClient.CreateTargetGroupAsync(new CreateTargetGroupRequest
-            {
-                Name = targetGroupName,
-                Protocol = ProtocolEnum.HTTP,
-                Port = deployPort,
-                VpcId = host.VpcId,
-                TargetType = TargetTypeEnum.Instance,
-                HealthCheckEnabled = true,
-                HealthCheckPath = "/",
-                HealthCheckIntervalSeconds = 30,
-                HealthCheckTimeoutSeconds = 5,
-                HealthyThresholdCount = 3,
-                UnhealthyThresholdCount = 3
-            });
-
-            EmitJournalEntry(journal, $"Create target group {targetGroupName}");
+            var targetGroupResponse = await AwsLoadBalancerService.CreateTargetGroupAsync(elbClient, targetGroupName,
+                deployPort, host.VpcId, args => SshOnJournalEvent(this, args));
 
             var targetGroup = targetGroupResponse.TargetGroups[0];
 
-            journal.CommandStarted = DateTimeOffset.UtcNow;
-            Logger.Info($"Registering instance {host.InstanceId} to target group {targetGroupName}");
-            await elbClient.RegisterTargetsAsync(new RegisterTargetsRequest
-            {
-                TargetGroupArn = targetGroup.TargetGroupArn,
-                Targets = [new() { Id = host.InstanceId }]
-            });
+            await AwsLoadBalancerService.RegisterTargetsAsync(elbClient, targetGroupName, targetGroup.TargetGroupArn,
+                host.InstanceId, args => SshOnJournalEvent(this, args));
 
-            EmitJournalEntry(journal, $"Register instance {host.InstanceId} to target group {targetGroupName}");
-
-            journal.CommandStarted = DateTimeOffset.UtcNow;
-            Logger.Info("Retrieving listeners");
-            var listeners = await elbClient.DescribeListenersAsync(new DescribeListenersRequest
-            {
-                LoadBalancerArn = host.AssignedLoadBalancerArn
-            });
-
-            EmitJournalEntry(journal, "Retrieve listeners");
+            var listeners = await AwsLoadBalancerService.DescribeListenersAsync(elbClient, host.AssignedLoadBalancerArn,
+                args => SshOnJournalEvent(this, args));
 
             var portToFind = listeners.Listeners.Count == 1
                 ? 80
@@ -344,13 +312,8 @@ namespace DeployTools.Core.Services
                     continue;
                 }
 
-                journal.CommandStarted = DateTimeOffset.UtcNow;
-                Logger.Info($"Retrieving all rules of listener {listener.ListenerArn} to determine next priority");
-                var listRulesResponse = await elbClient.DescribeRulesAsync(new DescribeRulesRequest
-                {
-                    ListenerArn = listener.ListenerArn
-                });
-                EmitJournalEntry(journal, $"List rules of listener {listener.ListenerArn}");
+                var listRulesResponse = await AwsLoadBalancerService.DescribeRulesAsync(elbClient, listener.ListenerArn,
+                    args => SshOnJournalEvent(this, args));
 
                 var priority = 0;
 
@@ -365,42 +328,8 @@ namespace DeployTools.Core.Services
 
                 priority++;
 
-                journal.CommandStarted = DateTimeOffset.UtcNow;
-                Logger.Info($"Adding rule to listener - domain {application.Domain}");
-                await elbClient.CreateRuleAsync(new CreateRuleRequest
-                {
-                    Tags =
-                    [
-                        new()
-                        {
-                            Key = "Name",
-                            Value = ruleName
-                        }
-                    ],
-                    ListenerArn = listener.ListenerArn,
-                    Priority = priority,
-                    Actions =
-                    [
-                        new()
-                        {
-                            TargetGroupArn = targetGroup.TargetGroupArn,
-                            Type = ActionTypeEnum.Forward
-                        }
-                    ],
-                    Conditions =
-                    [
-                        new()
-                        {
-                            Field = "host-header",
-                            HostHeaderConfig = new HostHeaderConditionConfig
-                            {
-                                Values = [application.Domain, $"*.{application.Domain}"]
-                            }
-                        }
-                    ]
-                });
-
-                EmitJournalEntry(journal, $"Add rule to listener for domain {application.Domain}");
+                await AwsLoadBalancerService.CreateRuleAsync(elbClient, ruleName, listener.ListenerArn, priority,
+                    targetGroup.TargetGroupArn, application.Domain, args => SshOnJournalEvent(this, args));
             }
         }
 
