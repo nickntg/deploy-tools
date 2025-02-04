@@ -15,66 +15,25 @@ namespace DeployTools.Core.Services
             string targetGroupArn,
             Action<JournalEventArgs> logFunction)
         {
-            Log.Info($"Removing target group {targetGroupArn}");
+            return await ExecuteCommandAsync($"Removing target group {targetGroupArn}", Operation, logFunction);
 
-            var @event = new JournalEventArgs
-            {
-                CommandExecuted = $"Removing target group {targetGroupArn}",
-                WasSuccessful = true
-            };
-
-            try
-            {
-                return await elbClient.DeleteTargetGroupAsync(new DeleteTargetGroupRequest
+            Task<DeleteTargetGroupResponse> Operation() => elbClient.DeleteTargetGroupAsync(new DeleteTargetGroupRequest
                 {
                     TargetGroupArn = targetGroupArn
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex);
-
-                @event.WasSuccessful = false;
-
-                throw;
-            }
-            finally
-            {
-                logFunction(@event);
-            }
+                }
+            );
         }
 
         public static async Task<DeleteRuleResponse> DeleteRuleAsync(IAmazonElasticLoadBalancingV2 elbClient,
             string ruleArn,
             Action<JournalEventArgs> logFunction)
         {
-            Log.Info($"Removing rule {ruleArn}");
+            return await ExecuteCommandAsync($"Removing rule {ruleArn}", Operation, logFunction);
 
-            var @event = new JournalEventArgs
+            Task<DeleteRuleResponse> Operation() => elbClient.DeleteRuleAsync(new DeleteRuleRequest
             {
-                CommandExecuted = $"Removing rule {ruleArn}",
-                WasSuccessful = true
-            };
-
-            try
-            {
-                return await elbClient.DeleteRuleAsync(new DeleteRuleRequest
-                {
-                    RuleArn = ruleArn
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex);
-
-                @event.WasSuccessful = false;
-
-                throw;
-            }
-            finally
-            {
-                logFunction(@event);
-            }
+                RuleArn = ruleArn
+            });
         }
 
         public static async Task<DescribeTargetGroupsResponse> DescribeTargetGroupsAsync(
@@ -82,19 +41,13 @@ namespace DeployTools.Core.Services
             string loadBalancerArn,
             Action<JournalEventArgs> logFunction)
         {
-            var message = string.IsNullOrEmpty(loadBalancerArn)
+            return await ExecuteCommandAsync(string.IsNullOrEmpty(loadBalancerArn)
                 ? $"Retrieving target groups of load balancer {loadBalancerArn}"
-                : "Retrieving all target groups";
+                : "Retrieving all target groups", 
+                Operation, 
+                logFunction);
 
-            Log.Info(message);
-
-            var @event = new JournalEventArgs
-            {
-                CommandExecuted = message,
-                WasSuccessful = true
-            };
-
-            try
+            Task<DescribeTargetGroupsResponse> Operation()
             {
                 var request = new DescribeTargetGroupsRequest();
 
@@ -103,21 +56,8 @@ namespace DeployTools.Core.Services
                     request.LoadBalancerArn = loadBalancerArn;
                 }
 
-                return await elbClient.DescribeTargetGroupsAsync(request);
+                return elbClient.DescribeTargetGroupsAsync(request);
             }
-            catch (Exception ex)
-            {
-                Log.Error(ex);
-
-                @event.WasSuccessful = false;
-
-                throw;
-            }
-            finally
-            {
-                logFunction(@event);
-            }
-
         }
         public static async Task<CreateRuleResponse> CreateRuleAsync(IAmazonElasticLoadBalancingV2 elbClient,
             string ruleName,
@@ -127,94 +67,52 @@ namespace DeployTools.Core.Services
             string domain,
             Action<JournalEventArgs> logFunction)
         {
-            Log.Info($"Adding rule to listener {listenerArn} - domain {domain}");
-
-            var @event = new JournalEventArgs
+            return await ExecuteCommandAsync($"Adding rule to listener {listenerArn} - domain {domain}", Operation, logFunction);
+            
+            Task<CreateRuleResponse> Operation() => elbClient.CreateRuleAsync(new CreateRuleRequest
             {
-                CommandExecuted = $"Add rule to listener for domain {domain}",
-                WasSuccessful = true
-            };
-
-            try
-            {
-                return await elbClient.CreateRuleAsync(new CreateRuleRequest
-                {
-                    Tags =
-                    [
-                        new()
+                Tags =
+                [
+                    new()
+                    {
+                        Key = "Name",
+                        Value = ruleName
+                    }
+                ],
+                ListenerArn = listenerArn,
+                Priority = priority,
+                Actions =
+                [
+                    new()
+                    {
+                        TargetGroupArn = targetGroupArn,
+                        Type = ActionTypeEnum.Forward
+                    }
+                ],
+                Conditions =
+                [
+                    new()
+                    {
+                        Field = "host-header",
+                        HostHeaderConfig = new HostHeaderConditionConfig
                         {
-                            Key = "Name",
-                            Value = ruleName
+                            Values = [domain, $"*.{domain}"]
                         }
-                    ],
-                    ListenerArn = listenerArn,
-                    Priority = priority,
-                    Actions =
-                    [
-                        new()
-                        {
-                            TargetGroupArn = targetGroupArn,
-                            Type = ActionTypeEnum.Forward
-                        }
-                    ],
-                    Conditions =
-                    [
-                        new()
-                        {
-                            Field = "host-header",
-                            HostHeaderConfig = new HostHeaderConditionConfig
-                            {
-                                Values = [domain, $"*.{domain}"]
-                            }
-                        }
-                    ]
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex);
-
-                @event.WasSuccessful = false;
-
-                throw;
-            }
-            finally
-            {
-                logFunction(@event);
-            }
+                    }
+                ]
+            });
         }
 
         public static async Task<DescribeRulesResponse> DescribeRulesAsync(IAmazonElasticLoadBalancingV2 elbClient,
             string listenerArn,
             Action<JournalEventArgs> logFunction)
         {
-            var @event = new JournalEventArgs
-            {
-                CommandExecuted = $"List rules for listener {listenerArn}",
-                WasSuccessful = true
-            };
+            return await ExecuteCommandAsync($"List rules for listener {listenerArn}", Operation, logFunction);
 
-            Log.Info($"List rules for listener {listenerArn}");
-
-            try
+            Task<DescribeRulesResponse> Operation() => elbClient.DescribeRulesAsync(new DescribeRulesRequest
             {
-                return await elbClient.DescribeRulesAsync(new DescribeRulesRequest
-                {
-                    ListenerArn = listenerArn
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex);
-
-                @event.WasSuccessful = false;
-
-                throw;
-            }
-            finally
-            {
-                logFunction(@event);
-            }
+                ListenerArn = listenerArn
+            });
         }
 
         public static async Task<DescribeListenersResponse> DescribeListenersAsync(
@@ -222,33 +120,12 @@ namespace DeployTools.Core.Services
             string assignedLoadBalancerArn,
             Action<JournalEventArgs> logFunction)
         {
-            Log.Info("Retrieve listeners");
+            return await ExecuteCommandAsync("Retrieve listeners", Operation, logFunction);
 
-            var @event = new JournalEventArgs
+            Task<DescribeListenersResponse> Operation() => elbClient.DescribeListenersAsync(new DescribeListenersRequest()
             {
-                CommandExecuted = "Retrieve listeners",
-                WasSuccessful = true
-            };
-
-            try
-            {
-                return await elbClient.DescribeListenersAsync(new DescribeListenersRequest()
-                {
-                    LoadBalancerArn = assignedLoadBalancerArn
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex);
-
-                @event.WasSuccessful = false;
-
-                throw;
-            }
-            finally
-            {
-                logFunction(@event);
-            }
+                LoadBalancerArn = assignedLoadBalancerArn
+            });
         }
 
         public static async Task<RegisterTargetsResponse> RegisterTargetsAsync(IAmazonElasticLoadBalancingV2 elbClient,
@@ -257,34 +134,13 @@ namespace DeployTools.Core.Services
             string instanceId,
             Action<JournalEventArgs> logFunction)
         {
-            Log.Info($"Registering instance {instanceId} to target group {targetGroupName}");
+            return await ExecuteCommandAsync($"Registering instance {instanceId} to target group {targetGroupName}", Operation, logFunction);
 
-            var @event = new JournalEventArgs
+            Task<RegisterTargetsResponse> Operation() => elbClient.RegisterTargetsAsync(new RegisterTargetsRequest
             {
-                CommandExecuted = $"Register instance {instanceId} to target group {targetGroupName}",
-                WasSuccessful = true
-            };
-
-            try
-            {
-                return await elbClient.RegisterTargetsAsync(new RegisterTargetsRequest
-                {
-                    TargetGroupArn = targetGroupArn,
-                    Targets = [new() { Id = instanceId }]
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex);
-
-                @event.WasSuccessful = false;
-
-                throw;
-            }
-            finally
-            {
-                logFunction(@event);
-            }
+                TargetGroupArn = targetGroupArn,
+                Targets = [new() { Id = instanceId }]
+            });
         }
 
         public static async Task<CreateTargetGroupResponse> CreateTargetGroupAsync(IAmazonElasticLoadBalancingV2 elbClient,
@@ -293,71 +149,53 @@ namespace DeployTools.Core.Services
             string vpcId,
             Action<JournalEventArgs> logFunction)
         {
-            Log.Info($"Creating target group {targetGroupName}");
+            return await ExecuteCommandAsync($"Creating target group {targetGroupName}", Operation, logFunction);
 
-            var @event = new JournalEventArgs
+            Task<CreateTargetGroupResponse> Operation() => elbClient.CreateTargetGroupAsync(new CreateTargetGroupRequest
             {
-                CommandExecuted = $"Create target group {targetGroupName}",
+                Name = targetGroupName,
+                Protocol = ProtocolEnum.HTTP,
+                Port = deployPort,
+                VpcId = vpcId,
+                TargetType = TargetTypeEnum.Instance,
+                HealthCheckEnabled = true,
+                HealthCheckPath = "/",
+                HealthCheckIntervalSeconds = 30,
+                HealthCheckTimeoutSeconds = 5,
+                HealthyThresholdCount = 3,
+                UnhealthyThresholdCount = 3
+            });
+        }
+
+        private static async Task<T> ExecuteCommandAsync<T>(
+            string message,
+            Func<Task<T>> operation,
+            Action<JournalEventArgs> logFunction)
+        {
+            Log.Info(message);
+
+            var journalEvent = new JournalEventArgs
+            {
+                CommandExecuted = message,
                 WasSuccessful = true
             };
 
             try
             {
-                return await elbClient.CreateTargetGroupAsync(new CreateTargetGroupRequest
-                {
-                    Name = targetGroupName,
-                    Protocol = ProtocolEnum.HTTP,
-                    Port = deployPort,
-                    VpcId = vpcId,
-                    TargetType = TargetTypeEnum.Instance,
-                    HealthCheckEnabled = true,
-                    HealthCheckPath = "/",
-                    HealthCheckIntervalSeconds = 30,
-                    HealthCheckTimeoutSeconds = 5,
-                    HealthyThresholdCount = 3,
-                    UnhealthyThresholdCount = 3
-                });
+                return await operation();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                @event.WasSuccessful = false;
+                Log.Error(ex);
 
+                journalEvent.WasSuccessful = false;
+                
                 throw;
             }
             finally
             {
-                logFunction(@event);
+                logFunction(journalEvent);
             }
         }
-
-        //private static async Task<AmazonWebServiceResponse> ExecuteCommandAsync(string message, 
-        //    Func<Task<AmazonWebServiceResponse>> callFunc,
-        //    Action<JournalEventArgs> logFunction)
-        //{
-        //    Log.Info(message);
-
-        //    var @event = new JournalEventArgs
-        //    {
-        //        CommandExecuted = message,
-        //        WasSuccessful = true
-        //    };
-
-        //    try
-        //    {
-        //        return await callFunc();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Error(ex);
-
-        //        @event.WasSuccessful = false;
-
-        //        throw;
-        //    }
-        //    finally
-        //    {
-        //        logFunction(@event);
-        //    }
-        //}
     }
 }
