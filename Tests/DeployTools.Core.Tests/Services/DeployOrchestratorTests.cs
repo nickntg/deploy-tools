@@ -283,7 +283,7 @@ namespace DeployTools.Core.Tests.Services
             A.CallTo(() => dbContext.ActiveDeploymentsRepository.SaveAsync(A<ActiveDeployment>.Ignored))
                 .MustHaveHappenedOnceExactly();
             A.CallTo(() => dbContext.JournalEntriesRepository.SaveAsync(A<JournalEntry>.Ignored))
-                .MustHaveHappened(7, Times.Exactly);
+                .MustHaveHappened(9, Times.Exactly);
 
             A.CallTo(() =>
                     elbClient.CreateTargetGroupAsync(A<CreateTargetGroupRequest>.Ignored, A<CancellationToken>.Ignored))

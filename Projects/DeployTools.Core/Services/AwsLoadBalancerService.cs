@@ -2,20 +2,18 @@
 using System.Threading.Tasks;
 using Amazon.ElasticLoadBalancingV2;
 using Amazon.ElasticLoadBalancingV2.Model;
-using NLog;
+using DeployTools.Core.Helpers;
 
 namespace DeployTools.Core.Services
 {
     public class AwsLoadBalancerService
     {
-        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
         public static async Task<DeleteTargetGroupResponse> DeleteTargetGroupAsync(
             IAmazonElasticLoadBalancingV2 elbClient,
             string targetGroupArn,
             Action<JournalEventArgs> logFunction)
         {
-            return await ExecuteCommandAsync($"Removing target group {targetGroupArn}", Operation, logFunction);
+            return await AwsCommandExecutor.ExecuteCommandAsync($"Removing target group {targetGroupArn}", Operation, logFunction);
 
             Task<DeleteTargetGroupResponse> Operation() => elbClient.DeleteTargetGroupAsync(new DeleteTargetGroupRequest
                 {
@@ -28,7 +26,7 @@ namespace DeployTools.Core.Services
             string ruleArn,
             Action<JournalEventArgs> logFunction)
         {
-            return await ExecuteCommandAsync($"Removing rule {ruleArn}", Operation, logFunction);
+            return await AwsCommandExecutor.ExecuteCommandAsync($"Removing rule {ruleArn}", Operation, logFunction);
 
             Task<DeleteRuleResponse> Operation() => elbClient.DeleteRuleAsync(new DeleteRuleRequest
             {
@@ -41,7 +39,7 @@ namespace DeployTools.Core.Services
             string loadBalancerArn,
             Action<JournalEventArgs> logFunction)
         {
-            return await ExecuteCommandAsync(string.IsNullOrEmpty(loadBalancerArn)
+            return await AwsCommandExecutor.ExecuteCommandAsync(string.IsNullOrEmpty(loadBalancerArn)
                 ? $"Retrieving target groups of load balancer {loadBalancerArn}"
                 : "Retrieving all target groups", 
                 Operation, 
@@ -67,7 +65,7 @@ namespace DeployTools.Core.Services
             string domain,
             Action<JournalEventArgs> logFunction)
         {
-            return await ExecuteCommandAsync($"Adding rule to listener {listenerArn} - domain {domain}", Operation, logFunction);
+            return await AwsCommandExecutor.ExecuteCommandAsync($"Adding rule to listener {listenerArn} - domain {domain}", Operation, logFunction);
             
             Task<CreateRuleResponse> Operation() => elbClient.CreateRuleAsync(new CreateRuleRequest
             {
@@ -107,7 +105,7 @@ namespace DeployTools.Core.Services
             string listenerArn,
             Action<JournalEventArgs> logFunction)
         {
-            return await ExecuteCommandAsync($"List rules for listener {listenerArn}", Operation, logFunction);
+            return await AwsCommandExecutor.ExecuteCommandAsync($"List rules for listener {listenerArn}", Operation, logFunction);
 
             Task<DescribeRulesResponse> Operation() => elbClient.DescribeRulesAsync(new DescribeRulesRequest
             {
@@ -120,7 +118,7 @@ namespace DeployTools.Core.Services
             string assignedLoadBalancerArn,
             Action<JournalEventArgs> logFunction)
         {
-            return await ExecuteCommandAsync("Retrieve listeners", Operation, logFunction);
+            return await AwsCommandExecutor.ExecuteCommandAsync("Retrieve listeners", Operation, logFunction);
 
             Task<DescribeListenersResponse> Operation() => elbClient.DescribeListenersAsync(new DescribeListenersRequest()
             {
@@ -134,7 +132,7 @@ namespace DeployTools.Core.Services
             string instanceId,
             Action<JournalEventArgs> logFunction)
         {
-            return await ExecuteCommandAsync($"Registering instance {instanceId} to target group {targetGroupName}", Operation, logFunction);
+            return await AwsCommandExecutor.ExecuteCommandAsync($"Registering instance {instanceId} to target group {targetGroupName}", Operation, logFunction);
 
             Task<RegisterTargetsResponse> Operation() => elbClient.RegisterTargetsAsync(new RegisterTargetsRequest
             {
@@ -149,7 +147,7 @@ namespace DeployTools.Core.Services
             string vpcId,
             Action<JournalEventArgs> logFunction)
         {
-            return await ExecuteCommandAsync($"Creating target group {targetGroupName}", Operation, logFunction);
+            return await AwsCommandExecutor.ExecuteCommandAsync($"Creating target group {targetGroupName}", Operation, logFunction);
 
             Task<CreateTargetGroupResponse> Operation() => elbClient.CreateTargetGroupAsync(new CreateTargetGroupRequest
             {
@@ -165,37 +163,6 @@ namespace DeployTools.Core.Services
                 HealthyThresholdCount = 3,
                 UnhealthyThresholdCount = 3
             });
-        }
-
-        private static async Task<T> ExecuteCommandAsync<T>(
-            string message,
-            Func<Task<T>> operation,
-            Action<JournalEventArgs> logFunction)
-        {
-            Log.Info(message);
-
-            var journalEvent = new JournalEventArgs
-            {
-                CommandExecuted = message,
-                WasSuccessful = true
-            };
-
-            try
-            {
-                return await operation();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex);
-
-                journalEvent.WasSuccessful = false;
-                
-                throw;
-            }
-            finally
-            {
-                logFunction(journalEvent);
-            }
         }
     }
 }

@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.ElasticLoadBalancingV2;
 using Amazon.RDS;
-using Amazon.RDS.Model;
 using DeployTools.Core.DataAccess.Context.Interfaces;
 using DeployTools.Core.DataAccess.Entities;
 using DeployTools.Core.Helpers;
@@ -199,44 +198,16 @@ namespace DeployTools.Core.Services
                 DbUserName = "master"
             };
 
-            var journalEntry = new JournalEventArgs
-            {
-                CommandStarted = DateTimeOffset.UtcNow,
-            };
-
-            var createRequest = new CreateDBInstanceRequest
-            {
-                DBInstanceIdentifier = ConstructDbInstanceName(applicationName),
-                Engine = rdsPackage.Engine,
-                EngineVersion = rdsPackage.EngineVersion,
-                MasterUsername = dbConfiguration.DbUserName,
-                MasterUserPassword = dbConfiguration.DbPassword,
-                DBInstanceClass = rdsPackage.DbInstance,
-                VpcSecurityGroupIds = [rdsPackage.VpcSecurityGroupId],
-                PubliclyAccessible = false,
-                MultiAZ = false,
-                BackupRetentionPeriod = 7,
-                StorageEncrypted = true,
-                DeletionProtection = false,
-                DBSubnetGroupName = rdsPackage.DbSubnetGroupName,
-                DBName = dbConfiguration.DbName,
-                MonitoringInterval = 0
-            };
-
-            if (!string.IsNullOrEmpty(rdsPackage.StorageType))
-            {
-                createRequest.StorageType = rdsPackage.StorageType;
-                createRequest.AllocatedStorage = rdsPackage.StorageInGigabytes ?? 20;
-                createRequest.MaxAllocatedStorage = rdsPackage.StorageInGigabytes ?? 20;
-            }
-
             try
             {
-                var response = await rdsClient.CreateDBInstanceAsync(createRequest);
+                var response = await AwsRdsService.CreateDbInstanceAsync(rdsClient,
+                    ConstructDbInstanceName(applicationName),
+                    rdsPackage.Engine, rdsPackage.EngineVersion, dbConfiguration.DbUserName, dbConfiguration.DbPassword,
+                    rdsPackage.DbInstance, rdsPackage.VpcSecurityGroupId, rdsPackage.DbSubnetGroupName,
+                    dbConfiguration.DbName, rdsPackage.StorageType, rdsPackage.StorageInGigabytes,
+                    args => SshOnJournalEvent(this, args));
 
                 dbConfiguration.DbArn = response.DBInstance.DBInstanceArn;
-
-                EmitJournalEntry(journalEntry, $"RDS instance {dbConfiguration.DbArn} created");
 
                 var startedTime = DateTimeOffset.UtcNow;
 
@@ -245,11 +216,9 @@ namespace DeployTools.Core.Services
                     Logger.Info($"Waiting for RDS with arn {dbConfiguration.DbArn} to get address info");
                     Thread.Sleep(5000);
 
-                    var describeResponse = await rdsClient.DescribeDBInstancesAsync(new DescribeDBInstancesRequest
-                    {
-                        DBInstanceIdentifier = dbConfiguration.DbArn
-                    });
-
+                    var describeResponse = await AwsRdsService.DescribeDbInstanceAsync(rdsClient, dbConfiguration.DbArn,
+                        args => SshOnJournalEvent(this, args));
+                    
                     var instance = describeResponse.DBInstances[0];
 
                     if (instance.Endpoint is not null)
@@ -257,8 +226,7 @@ namespace DeployTools.Core.Services
                         dbConfiguration.Address = instance.Endpoint.Address;
                         dbConfiguration.Port = instance.Endpoint.Port;
 
-                        journalEntry.CommandStarted = DateTimeOffset.UtcNow;
-                        EmitJournalEntry(journalEntry, $"RDS instance {dbConfiguration.DbArn} created and configured, host={dbConfiguration.Address}, port={dbConfiguration.Port}, db={dbConfiguration.DbName}, user={dbConfiguration.DbUserName}, password={dbConfiguration.DbPassword}");
+                        EmitJournalEntry(new JournalEventArgs(), $"RDS instance {dbConfiguration.DbArn} created and configured, host={dbConfiguration.Address}, port={dbConfiguration.Port}, db={dbConfiguration.DbName}, user={dbConfiguration.DbUserName}, password={dbConfiguration.DbPassword}");
 
                         break;
                     }
@@ -341,24 +309,10 @@ namespace DeployTools.Core.Services
 
             Logger.Info($"Starting takedown of RDS database with arn {rdsArn}");
 
-            var journalEntry = new JournalEventArgs
-            {
-                CommandStarted = DateTimeOffset.UtcNow
-            };
+            var dbInstance = await AwsRdsService.DescribeDbInstanceAsync(rdsClient, rdsArn, args => SshOnJournalEvent(this, args));
 
-            var dbInstance = await rdsClient.DescribeDBInstancesAsync(new DescribeDBInstancesRequest
-            {
-                DBInstanceIdentifier = rdsArn
-            });
-
-            await rdsClient.DeleteDBInstanceAsync(new DeleteDBInstanceRequest
-            {
-                DBInstanceIdentifier = dbInstance.DBInstances[0].DBInstanceIdentifier,
-                DeleteAutomatedBackups = true,
-                SkipFinalSnapshot = true
-            });
-
-            EmitJournalEntry(journalEntry, $"RDS instance {rdsArn} deleted");
+            await AwsRdsService.DeleteDbInstanceAsync(rdsClient, dbInstance.DBInstances[0].DBInstanceIdentifier,
+                args => SshOnJournalEvent(this, args));
 
             Logger.Info($"RDS instance with arn {rdsArn} deleted");
         }
