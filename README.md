@@ -25,7 +25,7 @@ Simple .Net web applications or APIs can be deployed by Deploy Tools. If an exte
 
 ## Assumptions & limitations
 
-* Hosts run EC2 Linux and are preconfigured for SSH access.
+* Hosts run AWS Linux and are preconfigured for SSH access.
 * A package is build to run without the .Net framework installed. Different architecture selections can be used (x64, arm) but linux should be assumed to be the running host.
 * An ALB is used to serve traffic from the internet to the EC2 instances.
 * An application runs on a single host. If it fails, it fails.
