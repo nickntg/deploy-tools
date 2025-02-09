@@ -10,6 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1D94F7F5-19FF-4E6D-8E16-5D846A0EB876}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeployTools.Core.DataAccess", "Projects\DeployTools.Core.DataAccess\DeployTools.Core.DataAccess.csproj", "{B0514AA9-BF8D-4154-B1CD-C65288CFA1FA}"
