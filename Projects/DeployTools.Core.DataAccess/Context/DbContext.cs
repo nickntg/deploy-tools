@@ -30,6 +30,7 @@ namespace DeployTools.Core.DataAccess.Context
             JobsRepository = new JobsRepository(Session);
             RdsEnginesRepository = new RdsEnginesRepository(Session);
             RdsPackagesRepository = new RdsPackagesRepository(Session);
+            CertificateRepository = new CertificatesRepository(Session);
         }
 
         public IApplicationDeploysRepository ApplicationDeploysRepository { get; }
@@ -42,6 +43,7 @@ namespace DeployTools.Core.DataAccess.Context
         public IJobsRepository JobsRepository { get; }
         public IRdsEnginesRepository RdsEnginesRepository { get; }
         public IRdsPackagesRepository RdsPackagesRepository { get; }
+        public ICertificatesRepository CertificateRepository { get; }
 
         public void BeginTransaction()
         {
