@@ -46,6 +46,7 @@ namespace DeployTools.Core.Configuration
             services.AddScoped<IApplicationsService, ApplicationsService>();
             services.AddScoped<IRdsEnginesService, RdsEnginesService>();
             services.AddScoped<IRdsPackagesService, RdsPackagesService>();
+            services.AddScoped<ICertificatesService, CertificatesService>();
 
             return services;
         }

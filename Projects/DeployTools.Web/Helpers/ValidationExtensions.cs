@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using DeployTools.Core.DataAccess.Entities;
 using DeployTools.Core.Services.Interfaces;
@@ -7,6 +8,27 @@ namespace DeployTools.Web.Helpers
 {
     public static class ValidationExtensions
     {
+        public static async Task<string> ValidateCertificate(this Certificate certificate,
+            ICertificatesService certificateService)
+        {
+            try
+            {
+                CheckEmpty(certificate.Domain, "Domain cannot be empty");
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+
+            var existing = await certificateService.GetCertificateByDomainAsync(certificate.Domain);
+            if (existing is not null)
+            {
+                return "Certificate with the same domain already exists";
+            }
+
+            return null;
+        }
+
         public static async Task<string> ValidateRdsPackage(this RdsPackage package, IRdsPackagesService rdsPackageService)
         {
             try
