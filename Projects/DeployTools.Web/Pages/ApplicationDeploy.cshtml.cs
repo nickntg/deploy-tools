@@ -51,6 +51,24 @@ namespace DeployTools.Web.Pages
                 return await OnGet(id);
             }
 
+            if (certificate.IsMarkedForDeletion)
+            {
+                ErrorMessage = "The certificate for this application is marked for deletion";
+                return await OnGet(id);
+            }
+
+            if (!certificate.IsValidated)
+            {
+                ErrorMessage = "The certificate for this application has not been yet validated";
+                return await OnGet(id);
+            }
+
+            if (!certificate.IsCreated)
+            {
+                ErrorMessage = "The certificate for this application has not yet been created";
+                return await OnGet(id);
+            }
+
             await deploymentsService.StartDeploymentAsync(id, ApplicationDeploy.HostId);
 
             return RedirectToPage("/Applications");
