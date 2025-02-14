@@ -17,6 +17,7 @@ namespace DeployTools.Core.DataAccess.Mappings
             Map(x => x.ValidationInfo).Column("validation_info");
             Map(x => x.IsValidated).Column("is_validated");
             Map(x => x.IsCreated).Column("is_created");
+            Map(x => x.IsMarkedForDeletion).Column("is_marked_for_deletion");
         }
     }
 }

@@ -5,6 +5,7 @@ using DeployTools.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using Amazon.CertificateManager;
 using Amazon.RDS;
 using DeployTools.Core.Services.Background;
 using DeployTools.Core.Services.Background.Interfaces;
@@ -32,6 +33,7 @@ namespace DeployTools.Core.Configuration
 
             services.AddSingleton(_ => options.CreateServiceClient<IAmazonElasticLoadBalancingV2>());
             services.AddSingleton(_ => options.CreateServiceClient<IAmazonRDS>());
+            services.AddSingleton(_ => options.CreateServiceClient<IAmazonCertificateManager>());
 
             return services;
         }
@@ -55,6 +57,7 @@ namespace DeployTools.Core.Configuration
         {
             services.AddScoped<ITakeDownApplicationJob, TakeDownApplicationJob>();
             services.AddScoped<IDeployApplicationJob, DeployApplicationJob>();
+            services.AddScoped<ICertificateAdminJob, CertificateAdminJob>();
 
             return services;
         }

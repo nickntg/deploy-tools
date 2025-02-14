@@ -10,6 +10,13 @@ namespace DeployTools.Core.DataAccess.Repositories
 {
     public class CertificatesRepository(ISession session) : CrudRepository<Certificate>(session), ICertificatesRepository
     {
+        public async Task<IList<Certificate>> GetCertificatesMarkedForDeletionAsync()
+        {
+            return await Session.CreateCriteria<Certificate>()
+                .Add(Restrictions.Eq(nameof(Certificate.IsMarkedForDeletion), true))
+                .ListAsync<Certificate>();
+        }
+
         public async Task<Certificate> GetCertificateByDomainAsync(string domain)
         {
             return await Session.CreateCriteria<Certificate>()

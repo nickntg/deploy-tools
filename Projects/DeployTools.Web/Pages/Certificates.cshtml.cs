@@ -46,7 +46,9 @@ namespace DeployTools.Web.Pages
                 }
             }
 
-            await certificatesService.DeleteAsync(certificate);
+            certificate.IsMarkedForDeletion = true;
+
+            await certificatesService.UpdateAsync(certificate);
 
             return await OnGet();
         }

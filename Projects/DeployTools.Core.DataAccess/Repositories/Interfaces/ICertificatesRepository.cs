@@ -10,5 +10,6 @@ namespace DeployTools.Core.DataAccess.Repositories.Interfaces
         Task<IList<Certificate>> GetUnvalidatedCertificatesAsync();
         Task<IList<Certificate>> GetCertificatesAboutToExpireAsync(int daysUntilExpiration);
         Task<IList<Certificate>> GetCertificatesNotCreatedAsync();
+        Task<IList<Certificate>> GetCertificatesMarkedForDeletionAsync();
     }
 }

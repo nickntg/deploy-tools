@@ -35,12 +35,12 @@ namespace DeployTools.Core.Services
             }
         }
 
-        public async Task<T> SaveAsync(T entity)
+        public virtual async Task<T> SaveAsync(T entity)
         {
             return await Repo.SaveAsync(entity);
         }
 
-        public async Task<T> UpdateAsync(T entity)
+        public virtual async Task<T> UpdateAsync(T entity)
         {
             return await Repo.UpdateAsync(entity);
         }
