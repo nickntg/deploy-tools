@@ -2,6 +2,7 @@
 using System.Threading;
 using DeployTools.Batch.Hangfire;
 using DeployTools.Core.Configuration;
+using DeployTools.Core.Services.Background;
 using DeployTools.Core.Services.Background.Interfaces;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -78,9 +79,11 @@ namespace DeployTools.Batch
 				});
 			});
 
-            RecurringJob.AddOrUpdate<ITakeDownApplicationJob>("TakeDownApplicationJob",
+            RecurringJob.AddOrUpdate<ITakeDownApplicationJob>(nameof(TakeDownApplicationJob),
                 x => x.ProcessAsync(CancellationToken.None), Cron.Minutely);
-            RecurringJob.AddOrUpdate<IDeployApplicationJob>("DeployApplicationJob",
+            RecurringJob.AddOrUpdate<IDeployApplicationJob>(nameof(DeployApplicationJob),
+                x => x.ProcessAsync(CancellationToken.None), Cron.Minutely);
+            RecurringJob.AddOrUpdate<ICertificateAdminJob>(nameof(CertificateAdminJob),
                 x => x.ProcessAsync(CancellationToken.None), Cron.Minutely);
         }
 	}

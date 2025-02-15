@@ -1,0 +1,23 @@
+﻿@page
+@model DeployTools.Web.Pages.CertificateCreateModel
+@{
+    ViewData["Title"] = "New Certificate";
+}
+@{
+<div class="container mt-4">
+    <h1 class="mb-4">Create Certificate</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @Model.ErrorMessage
+        </div>
+    }
+    <form method="post">
+        <div class="mb-3">
+            <label for="Domain" class="form-label">Domain</label>
+            <input type="text" class="form-control" id="Domain" name="Certificate.Domain" value="@Model.Certificate.Domain" required>
+        </div>
+        <button type="submit" class="btn btn-success">Save</button>
+    </form>
+</div>
+}

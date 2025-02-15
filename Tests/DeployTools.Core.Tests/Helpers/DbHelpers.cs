@@ -27,6 +27,8 @@ namespace DeployTools.Core.Tests.Helpers
                 .Returns(A.Fake<IPackagesRepository>(x => x.Strict()));
             A.CallTo(() => dbContext.RdsPackagesRepository)
                 .Returns(A.Fake<IRdsPackagesRepository>(x => x.Strict()));
+            A.CallTo(() => dbContext.CertificateRepository)
+                .Returns(A.Fake<ICertificatesRepository>(x => x.Strict()));
             return dbContext;
         }
     }

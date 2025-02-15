@@ -1,0 +1,76 @@
+﻿@page
+@using NHibernate.Id
+@model DeployTools.Web.Pages.CertificatesModel
+@{
+    ViewData["Title"] = "Certificates";
+}
+@{
+    <main class="pri_color_3_background pt-2">
+    <div class="container mt-4">
+        <h1 class="mb-4">Certificates List</h1>
+        <div class="mb-3">
+            <form method="get" action="/CertificateCreate">
+                <button type="submit" class="btn btn-success">New Certificate</button>
+            </form>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                @Model.ErrorMessage
+            </div>
+        }
+
+        @if (Model.Certificates is { Count: > 0 })
+        {
+            <table class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Domain</th>
+                    <th>ARN</th>
+                    <th>Certificate ID</th>
+                    <th>Created</th>
+                    <th>Validated</th>
+                    <th>Marked for deletion</th>
+                    <th>Validation Info</th>
+                    <th>Expires At</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var certificate in Model.Certificates)
+                {
+                    <tr>
+                        <td>@certificate.Id</td>
+                        <td>@certificate.Domain</td>
+                        <td>@certificate.Arn</td>
+                        <td>@certificate.CertificateId</td>
+                        <td>@certificate.IsCreated</td>
+                        <td>@certificate.IsValidated</td>
+                        <td>@certificate.IsMarkedForDeletion</td>
+                        <td>@certificate.ValidationInfo</td>
+                        <td>@certificate.ExpiresAt?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@certificate.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>
+                            @if (!certificate.IsMarkedForDeletion)
+                            {
+                                <form method="post">
+                                    <input type="hidden" name="id" value="@certificate.Id"/>
+                                    <button type="submit" asp-page-handler="Delete" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No certificates found.</p>
+        }
+    </div>
+    </main>
+}

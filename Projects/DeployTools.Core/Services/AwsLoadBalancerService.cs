@@ -57,6 +57,30 @@ namespace DeployTools.Core.Services
                 return elbClient.DescribeTargetGroupsAsync(request);
             }
         }
+
+        public static async Task<bool> AttachCertificateAsync(IAmazonElasticLoadBalancingV2 elbClient,
+            string listenerArn,
+            string certificateArn)
+        {
+            try
+            {
+                var addCertRequest = new AddListenerCertificatesRequest
+                {
+                    ListenerArn = listenerArn,
+                    Certificates = [new Certificate { CertificateArn = certificateArn }]
+                };
+
+                await elbClient.AddListenerCertificatesAsync(addCertRequest);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+
         public static async Task<CreateRuleResponse> CreateRuleAsync(IAmazonElasticLoadBalancingV2 elbClient,
             string ruleName,
             string listenerArn,

@@ -50,12 +50,19 @@ namespace DeployTools.Core.Services
 
             var applicationCreateSuccessful = true;
 
+            var certificate = await dbContext.CertificateRepository.GetCertificateByDomainAsync(application.Domain);
+            
             Logger.Info($"Starting deployment of application {application.Name} with id {application.Id}, package {package.Name} with id {package.Id}, to host {host.Address} with id {host.Id}, at port {deployPort}");
 
             DatabaseConfiguration dbInfo = null;
 
             try
             {
+                if (certificate is null || !certificate.IsValidated || certificate.IsMarkedForDeletion)
+                {
+                    throw new InvalidOperationException($"Could not find validated certificate for application {application.Name} and domain {application.Domain}");
+                }
+
                 dbInfo = await CreateDatabaseAsync(application.Name, application.RdsPackageId);
 
                 Logger.Info("Connecting to host");
@@ -117,7 +124,7 @@ namespace DeployTools.Core.Services
 
                 await RunCommandWithLogging($"sudo systemctl status {serviceName}", "Getting service status");
 
-                await CreateLoadBalancingAsync(application, host, deployPort);
+                await CreateLoadBalancingAsync(application, host, certificate, deployPort);
 
                 await dbContext.ActiveDeploymentsRepository.CleanupDeploymentsOfApplicationAsync(application.Id);
 
@@ -250,7 +257,7 @@ namespace DeployTools.Core.Services
             return dbConfiguration;
         }
 
-        private async Task CreateLoadBalancingAsync(Application application, Host host, int deployPort)
+        private async Task CreateLoadBalancingAsync(Application application, Host host, Certificate certificate, int deployPort)
         {
             var targetGroupName = ConstructTargetGroupName(application.Name);
             var ruleName = ConstructRuleName(application.Name);
@@ -277,6 +284,11 @@ namespace DeployTools.Core.Services
                 if (listener.Port != portToFind)
                 {
                     continue;
+                }
+
+                if (portToFind == 443)
+                {
+                    await AwsLoadBalancerService.AttachCertificateAsync(elbClient, listener.ListenerArn, certificate.Arn);
                 }
 
                 var listRulesResponse = await AwsLoadBalancerService.DescribeRulesAsync(elbClient, listener.ListenerArn,
@@ -340,6 +352,7 @@ namespace DeployTools.Core.Services
                         args => SshOnJournalEvent(this, args));
 
                     var foundRule = rules.Rules.FirstOrDefault(x =>
+                        x.Actions[0].TargetGroupArn is not null &&
                         x.Actions[0].TargetGroupArn.Equals(foundTargetGroup.TargetGroupArn));
 
                     if (foundRule is not null)

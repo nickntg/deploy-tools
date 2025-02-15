@@ -29,14 +29,18 @@ namespace DeployTools.Core.Services
             {
                 Repo = (ICrudRepository<T>)dbContext.RdsPackagesRepository;
             }
+            else if (typeof(T) == typeof(Certificate))
+            {
+                Repo = (ICrudRepository<T>)dbContext.CertificateRepository;
+            }
         }
 
-        public async Task<T> SaveAsync(T entity)
+        public virtual async Task<T> SaveAsync(T entity)
         {
             return await Repo.SaveAsync(entity);
         }
 
-        public async Task<T> UpdateAsync(T entity)
+        public virtual async Task<T> UpdateAsync(T entity)
         {
             return await Repo.UpdateAsync(entity);
         }

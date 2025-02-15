@@ -9,7 +9,8 @@ namespace DeployTools.Web.Pages
 {
     public class ApplicationDeployModel(IHostsService hostsService, 
         IApplicationsService applicationsService,
-        IDeploymentsService deploymentsService) : PageModel
+        IDeploymentsService deploymentsService,
+        ICertificatesService certificatesService): PageModel
     {
         [BindProperty] public ApplicationDeployExtended ApplicationDeploy { get; set; }
         [BindProperty] public string ErrorMessage { get; set; }
@@ -36,6 +37,37 @@ namespace DeployTools.Web.Pages
         public async Task<IActionResult> OnPost()
         {
             var id = Request.Query["id"];
+
+            var application = await applicationsService.GetByIdAsync(id);
+            if (application is null)
+            {
+                return NotFound();
+            }
+
+            var certificate = await certificatesService.GetCertificateByDomainAsync(application.Domain);
+            if (certificate is null)
+            {
+                ErrorMessage = "No certificate found for application domain";
+                return await OnGet(id);
+            }
+
+            if (certificate.IsMarkedForDeletion)
+            {
+                ErrorMessage = "The certificate for this application is marked for deletion";
+                return await OnGet(id);
+            }
+
+            if (!certificate.IsValidated)
+            {
+                ErrorMessage = "The certificate for this application has not been yet validated";
+                return await OnGet(id);
+            }
+
+            if (!certificate.IsCreated)
+            {
+                ErrorMessage = "The certificate for this application has not yet been created";
+                return await OnGet(id);
+            }
 
             await deploymentsService.StartDeploymentAsync(id, ApplicationDeploy.HostId);
 
