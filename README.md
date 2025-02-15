@@ -33,6 +33,9 @@ Simple .Net web applications or APIs can be deployed by Deploy Tools. If an exte
 * For RDS packages with specific storage, no storage auto-scaling is allowed.
 * Initial configuration of RDS subnets and security groups is not provided. These should be configured manually.
 * Configuration of RDS packages is not validated. In particular, combinations of DB engines, versions and instances are assumed to be valid.
+* Certificates are created in AWS ACM using the DNS validation method.
+* Certificates are not automatically renewed. Instead, it is expected that ACM will automatically renew certificates.
+* ALB listeners are assumed to use ports 80 and/or 443.
 
 ## WIP/next features
 
@@ -41,4 +44,3 @@ Simple .Net web applications or APIs can be deployed by Deploy Tools. If an exte
 * Redeployment of an updated package should be supported.
 * Moving a deployed application to another host should be supported.
 * More environments should be supported, not just Production.
-* Deployment/use of certificates should be supported.
