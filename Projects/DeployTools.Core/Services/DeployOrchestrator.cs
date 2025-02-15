@@ -58,7 +58,7 @@ namespace DeployTools.Core.Services
 
             try
             {
-                if (certificate is null || !certificate.IsValidated)
+                if (certificate is null || !certificate.IsValidated || certificate.IsMarkedForDeletion)
                 {
                     throw new InvalidOperationException($"Could not find validated certificate for application {application.Name} and domain {application.Domain}");
                 }

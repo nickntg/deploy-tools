@@ -32,7 +32,7 @@ namespace DeployTools.Core.Services.Background
                     await RemoveCertificatesMarkedForDeletion(jobInfo.CertificateId);
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new InvalidOperationException($"Unexpected certificate action {jobInfo.CertificateAction}");
             }
         }
 
@@ -49,10 +49,14 @@ namespace DeployTools.Core.Services.Background
                 var response = await certificatesService.CreateCertificateAsync(certificate);
 
                 var validationInfo = string.Empty;
-                foreach (var vd in response.DomainValidationOptions)
+                foreach (var dvo in response.DomainValidationOptions)
                 {
-                    validationInfo =
-                        $"{validationInfo}\r\n{vd.DomainName}\r\n{vd.ResourceRecordName}\r\n{vd.ResourceRecordType}\r\n{vd.ResourceRecordValue}";
+                    if (!string.IsNullOrEmpty(validationInfo))
+                    {
+                        validationInfo = $"{validationInfo}\r\n";
+                    }
+
+                    validationInfo = $"{validationInfo}{dvo.DomainName}\r\n{dvo.ResourceRecordName}\r\n{dvo.ResourceRecordType}\r\n{dvo.ResourceRecordValue}";
                 }
 
                 certificate.Arn = response.CertificateArn;

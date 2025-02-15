@@ -1,4 +1,7 @@
-﻿using Amazon.ElasticLoadBalancingV2;
+﻿using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Amazon.ElasticLoadBalancingV2;
 using Amazon.ElasticLoadBalancingV2.Model;
 using Amazon.RDS;
 using Amazon.RDS.Model;
@@ -9,6 +12,8 @@ using DeployTools.Core.Services.Interfaces;
 using DeployTools.Core.Tests.Helpers;
 using FakeItEasy;
 using Xunit;
+using Certificate = DeployTools.Core.DataAccess.Entities.Certificate;
+
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace DeployTools.Core.Tests.Services
@@ -38,6 +43,14 @@ namespace DeployTools.Core.Tests.Services
                     Assert.False(deploy.IsSuccessful);
                 })
                 .Returns(Task.FromResult(new ApplicationDeploy()));
+            A.CallTo(() => dbContext.CertificateRepository.GetCertificateByDomainAsync("www.domain.com"))
+                .Returns(Task.FromResult(new Certificate
+                {
+                    Arn = "certificate arn",
+                    IsMarkedForDeletion = false,
+                    IsValidated = true,
+                    IsCreated = true
+                }));
 
             var ssh = A.Fake<ICoreSsh>();
 
@@ -128,16 +141,31 @@ namespace DeployTools.Core.Tests.Services
                         {
                             Port = 80,
                             ListenerArn = "listener arn"
+                        },
+                        new()
+                        {
+                            Port = 443,
+                            ListenerArn = "secure listener arn"
                         }
                     ]
                 }));
+            A.CallTo(() =>
+                    elbClient.AddListenerCertificatesAsync(A<AddListenerCertificatesRequest>.Ignored,
+                        A<CancellationToken>.Ignored))
+                .Invokes((AddListenerCertificatesRequest request, CancellationToken _) =>
+                {
+                    Assert.Equal("secure listener arn", request.ListenerArn);
+                    Assert.Single(request.Certificates);
+                    Assert.Equal("certificate arn", request.Certificates[0].CertificateArn);
+                })
+                .Returns(Task.FromResult(new AddListenerCertificatesResponse()));
             A.CallTo(() => elbClient.CreateRuleAsync(A<CreateRuleRequest>.Ignored, A<CancellationToken>.Ignored))
                 .Invokes((CreateRuleRequest request, CancellationToken _) =>
                 {
                     Assert.Single(request.Tags);
                     Assert.Equal("Name", request.Tags[0].Key);
                     Assert.Equal("application-rule", request.Tags[0].Value);
-                    Assert.Equal("listener arn", request.ListenerArn);
+                    Assert.Equal("secure listener arn", request.ListenerArn);
                     Assert.Single(request.Actions);
                     Assert.Equal("target group arn", request.Actions[0].TargetGroupArn);
                     Assert.Equal(ActionTypeEnum.Forward.ToString(), request.Actions[0].Type);
@@ -258,6 +286,8 @@ namespace DeployTools.Core.Tests.Services
                 .MustHaveHappenedOnceExactly();
             A.CallTo(() => dbContext.ApplicationDeploysRepository.SaveAsync(A<ApplicationDeploy>.Ignored))
                 .MustHaveHappenedOnceExactly();
+            A.CallTo(() => dbContext.CertificateRepository.GetCertificateByDomainAsync("www.domain.com"))
+                .MustHaveHappenedOnceExactly();
 
             A.CallTo(() => ssh.ConnectAsync("address", "ssh user name", "key file"))
                 .MustHaveHappenedOnceExactly();
@@ -297,6 +327,10 @@ namespace DeployTools.Core.Tests.Services
             A.CallTo(() => elbClient.CreateRuleAsync(A<CreateRuleRequest>.Ignored, A<CancellationToken>.Ignored))
                 .MustHaveHappenedOnceExactly();
             A.CallTo(() => elbClient.DescribeRulesAsync(A<DescribeRulesRequest>.Ignored, A<CancellationToken>.Ignored))
+                .MustHaveHappenedOnceExactly();
+            A.CallTo(() =>
+                elbClient.AddListenerCertificatesAsync(A<AddListenerCertificatesRequest>.Ignored,
+                    A<CancellationToken>.Ignored))
                 .MustHaveHappenedOnceExactly();
 
             A.CallTo(() => ssh.DisconnectAsync())
